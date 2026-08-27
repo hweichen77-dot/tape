@@ -1,0 +1,20 @@
+[package]
+name = "tape"
+version = "1.0.0"
+description = "Tape — day trading on a market that does not exist"
+edition = "2021"
+
+[lib]
+name = "tape_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+
+[profile.release]
+opt-level = "s"
+lto = true
+strip = true
