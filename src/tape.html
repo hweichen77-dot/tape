@@ -189,10 +189,45 @@ cursor:pointer;display:flex;flex-direction:column;gap:7px;text-align:left}
 .perk .pd{font-size:12.5px;color:var(--ink2);line-height:1.45}
 .boot{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
 background:var(--ground);z-index:80;font-family:var(--mono);color:var(--ink3);font-size:13px}
+@media (max-width:1560px){
+  .tm{padding:0 9px;min-width:70px}
+  .tm .k{font-size:9px}
+  .tm .v{font-size:12.5px}
+  .ctrls{padding:0 7px;gap:3px}
+  .topbar button{padding:4px 7px;font-size:11.5px}
+}
+@media (max-width:1400px){
+  .perkchips{display:none}
+  #symIn{width:132px!important}
+  .tm.opt2{display:none}
+}
+@media (max-width:1240px){
+  .tm{padding:0 7px;min-width:60px}
+  .tm.opt1{display:none}
+  .bottom{grid-template-columns:1fr 1fr 250px}
+  .body{grid-template-columns:210px 1fr 236px}
+}
+.toosmall{position:fixed;inset:0;z-index:99;background:var(--ground);display:none;
+align-items:center;justify-content:center;flex-direction:column;gap:12px;text-align:center;padding:30px}
+.toosmall b{font-size:24px;font-weight:700}
+.toosmall span{color:var(--ink2);font-size:14px;max-width:40ch;line-height:1.6}
+@media (max-width:1080px),(max-height:560px){
+  #app{display:none}
+  .toosmall{display:flex}
+}
+.howto{display:grid;grid-template-columns:repeat(2,1fr);gap:1px;background:var(--line);
+border:1px solid var(--line);border-radius:3px;overflow:hidden}
+.howto div{background:var(--panel2);padding:9px 12px;font-size:12.5px;color:var(--ink2);line-height:1.45}
+.howto b{color:var(--amber);font-weight:600}
 @media (prefers-reduced-motion:reduce){*{animation:none!important}}
 </style></head>
 <body>
 <div class="boot" id="boot">building market…</div>
+<div class="toosmall">
+  <b>Tape needs a bigger window</b>
+  <span>It is a nine-panel trading terminal, so it wants at least 1080 by 560.
+  Open it on a laptop or desktop, or widen this window.</span>
+</div>
 <div id="app">
   <div class="topbar">
     <div class="brand"><i></i>TAPE</div>
@@ -212,11 +247,11 @@ background:var(--ground);z-index:80;font-family:var(--mono);color:var(--ink3);fo
     <div class="spacer"></div>
     <div class="tm"><span class="k">session</span><span class="v" id="vDay">1 / 20</span></div>
     <div class="tm"><span class="k">clock</span><span class="v" id="vClock">09:30</span></div>
-    <div class="tm"><span class="k">market</span><span class="v" id="vOpen"></span></div>
+    <div class="tm opt1"><span class="k">market</span><span class="v" id="vOpen"></span></div>
     <div class="tm"><span class="k">equity</span><span class="v" id="vEquity">10,000</span></div>
     <div class="tm"><span class="k">day P&amp;L</span><span class="v" id="vDayPl">0.00</span></div>
-    <div class="tm"><span class="k">buying power</span><span class="v" id="vBp">10,000</span></div>
-    <div class="tm"><span class="k">day trades</span><span class="v" id="vPdt">0 / 3</span></div>
+    <div class="tm opt2"><span class="k">buying power</span><span class="v" id="vBp">10,000</span></div>
+    <div class="tm opt1"><span class="k">day trades</span><span class="v" id="vPdt">0 / 3</span></div>
     <div class="tm"><span class="k">score</span><span class="v" id="vScore">0</span></div>
     <div class="tm"><span class="k">best</span><span class="v" id="vBest">—</span></div>
   </div>
@@ -310,6 +345,16 @@ background:var(--ground);z-index:80;font-family:var(--mono);color:var(--ink3);fo
   <h2>New run</h2>
   <p class="lede">A market of 6,200 companies that do not exist, generated from a seed. Every
   setting changes your score multiplier. Nothing leaves your browser.</p>
+  <div class="howto">
+    <div><b>Find something moving.</b> The scanner ranks every liquid name by session
+      change. Click any row — or search a ticker or company — to pull it onto the chart.</div>
+    <div><b>Trade it.</b> <kbd>B</kbd> buys and <kbd>S</kbd> sells at market, or click a
+      price on the ladder to rest a limit there. <kbd>F</kbd> flattens everything.</div>
+    <div><b>Control the clock.</b> <kbd>Space</kbd> plays and pauses, the speed buttons
+      run up to a full session per second, and it stops on its own at every close.</div>
+    <div><b>Survive twenty sessions.</b> Rent comes out at every close, and under $25k you
+      only get three day trades per five sessions. Score is what is left, adjusted for risk.</div>
+  </div>
   <div class="row">
     <button id="bDaily" class="on" style="padding:8px 16px">Daily challenge</button>
     <span class="dim3" style="font-size:12px" id="dailyNote"></span>
