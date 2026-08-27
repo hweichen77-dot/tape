@@ -33,10 +33,22 @@ input:focus{outline:none;border-color:var(--amber)}
 .brand{display:flex;align-items:center;gap:7px;padding:0 13px;border-right:1px solid var(--line);
 font-weight:700;letter-spacing:.02em}
 .tauri .brand{padding-left:82px}
-.tauri .topbar{-webkit-app-region:drag}
-.tauri .topbar button,.tauri .topbar input,.tauri .topbar .tm{-webkit-app-region:no-drag}
+.tauri .spacer{-webkit-app-region:drag}
 .brand i{width:7px;height:7px;background:var(--amber);border-radius:1px;box-shadow:0 0 9px var(--amber)}
 .ctrls{display:flex;align-items:center;gap:4px;padding:0 10px;border-right:1px solid var(--line)}
+.search{position:relative}
+.results{position:absolute;top:34px;left:8px;width:320px;background:var(--panel);
+border:1px solid var(--line2);border-radius:3px;z-index:60;display:none;
+box-shadow:0 20px 50px -18px #000;max-height:340px;overflow-y:auto}
+.results.show{display:block}
+.results .hit{display:grid;grid-template-columns:56px 1fr 74px;gap:9px;padding:6px 11px;
+cursor:pointer;align-items:baseline;border-bottom:1px solid rgba(27,35,48,.6)}
+.results .hit:last-child{border-bottom:0}
+.results .hit.on,.results .hit:hover{background:var(--amberd)}
+.results .hit .tk{font-family:var(--mono);font-size:12px;color:var(--amber);font-weight:600}
+.results .hit .nm{font-size:12.5px;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.results .hit .sc{font-size:10px;color:var(--ink3);font-family:var(--mono);text-align:right}
+.results .none{padding:10px 11px;color:var(--ink3);font-size:12px}
 .tm{padding:0 12px;display:flex;flex-direction:column;justify-content:center;
 border-left:1px solid var(--line);min-width:84px}
 .tm .k{font-size:9.5px;color:var(--ink3);font-family:var(--mono);line-height:1.15}
@@ -192,7 +204,10 @@ background:var(--ground);z-index:80;font-family:var(--mono);color:var(--ink3);fo
       <button id="bStep" title="n">step</button>
       <button id="bOpen" title="o">force open</button>
     </div>
-    <div class="ctrls"><input id="symIn" placeholder="symbol  /" style="width:104px"></div>
+    <div class="ctrls search">
+      <input id="symIn" placeholder="search 6,200 symbols  /" style="width:186px" autocomplete="off">
+      <div class="results" id="symRes"></div>
+    </div>
     <div class="perkchips" id="perkChips"></div>
     <div class="spacer"></div>
     <div class="tm"><span class="k">session</span><span class="v" id="vDay">1 / 20</span></div>
@@ -1217,6 +1232,8 @@ const $ = s => document.querySelector(s);
 let R = null, qty = 10, picks = {}, geom = null, hover = null;
 let scanMode = "gain", feedTab = "news", zoomN = 150, prevVals = {};
 
+function setHTML(el, html) { if (el._h !== html) { el._h = html; el.innerHTML = html; } }
+
 function flash(el, key, val) {
   if (prevVals[key] !== undefined && prevVals[key] !== val) {
     el.classList.remove("flash-up", "flash-dn"); void el.offsetWidth;
@@ -1356,32 +1373,32 @@ function renderFeed() {
   const el = $("#feed");
   if (feedTab === "log") {
     el.className = "scroll logbox";
-    el.innerHTML = R.log.slice(-40).reverse().map(l => {
+    setHTML(el, R.log.slice(-40).reverse().map(l => {
       const i = l.indexOf(" ");
       return `<div><b>${l.slice(0, i)}</b> ${l.slice(i + 1)}</div>`;
-    }).join("");
+    }).join(""));
     return;
   }
   el.className = "scroll feed";
   if (feedTab === "earn") {
     const u = R.upcoming(14);
-    el.innerHTML = u.length ? u.map(e => {
+    setHTML(el, u.length ? u.map(e => {
       const dir = e.dir ? (e.dir === "beat" ? '<span class="up">beat expected</span>'
         : '<span class="down">miss expected</span>') : '<span class="dim3">result unknown</span>';
       return `<div class="n" data-t="${e.tk}"><span class="t">S${e.day}</span>` +
         `<span class="s">${e.tk}</span><span class="h">${R.world.by[e.tk].name} reports` +
         `${e.held ? ' <span class="amb">· you hold this</span>' : ""}</span>` +
         `<span class="m">${dir}</span></div>`;
-    }).join("") : '<div class="n"><span></span><span></span><span class="dim3">no earnings scheduled in this run</span><span></span></div>';
+    }).join("") : '<div class="n"><span></span><span></span><span class="dim3">no earnings scheduled in this run</span><span></span></div>');
     return;
   }
-  el.innerHTML = R.news.length ? R.news.slice(0, 40).map(n => {
+  setHTML(el, R.news.length ? R.news.slice(0, 40).map(n => {
     const cls = n.move >= 0 ? "up" : "down";
     return `<div class="n" data-t="${n.tk}"><span class="t">` +
       `${pad2(Math.floor((570 + n.t % MIN_DAY) / 60))}:${pad2((570 + n.t % MIN_DAY) % 60)}</span>` +
       `<span class="s">${n.tk}</span><span class="h">${n.h}</span>` +
       `<span class="m ${cls}">${sgn(n.move, 1)}%</span></div>`;
-  }).join("") : '<div class="n"><span></span><span></span><span class="dim3">the wire is quiet</span><span></span></div>';
+  }).join("") : '<div class="n"><span></span><span></span><span class="dim3">the wire is quiet</span><span></span></div>');
 }
 
 function render() {
@@ -1409,7 +1426,7 @@ function render() {
   $("#bPlay").textContent = R.playing ? "❚❚" : "▶";
   $("#bPlay").classList.toggle("on", R.playing);
   $("#bOpen").classList.toggle("on", R.forceOpen);
-  $("#perkChips").innerHTML = [...R.perks].map(p => `<span class="chip">${PERK_BY[p].n}</span>`).join("");
+  setHTML($("#perkChips"), [...R.perks].map(p => `<span class="chip">${PERK_BY[p].n}</span>`).join(""));
 
   const s = R.world.by[R.focus];
   $("#cSym").textContent = R.focus;
@@ -1425,43 +1442,43 @@ function render() {
   $("#cHalt").innerHTML = hu ? `<span class="pill down">HALTED ${Math.ceil(hu - R.t)}m</span>` : "";
 
   const rows = R.scan(scanMode, R.has("radar") ? 26 : 12);
-  $("#scan tbody").innerHTML = rows.map(x =>
+  setHTML($("#scan tbody"), rows.map(x =>
     `<tr data-t="${x.tk}" class="${x.tk === R.focus ? "sel" : ""}"><td>${x.tk}</td>` +
     `<td>${fmt(x.last)}</td><td class="${x.chg >= 0 ? "up" : "down"}">${sgn(x.chg)}</td>` +
-    `<td class="dim">${fmt(x.rv, 1)}</td></tr>`).join("");
+    `<td class="dim">${fmt(x.rv, 1)}</td></tr>`).join(""));
 
-  $("#wl tbody").innerHTML = WATCH.map(tk => {
+  setHTML($("#wl tbody"), WATCH.map(tk => {
     const p = R.quote(tk)[2], o = R.px(tk, R.day * MIN_DAY), c = (p / o - 1) * 100;
     return `<tr data-t="${tk}" class="${tk === R.focus ? "sel" : ""}"><td>${tk}</td>` +
       `<td>${fmt(p)}</td><td class="${c >= 0 ? "up" : "down"}">${sgn(c)}</td></tr>`;
-  }).join("");
+  }).join(""));
 
   const lad = R.ladder(), maxSz = Math.max(1, ...lad.map(l => l.sz || 0));
   const ladEl = $("#ladder");
   ladEl.classList.toggle("halted", !!hu);
-  ladEl.innerHTML = R.blind ? '<div style="padding:14px;text-align:center" class="dim3">chart only</div>'
+  setHTML(ladEl, R.blind ? '<div style="padding:14px;text-align:center" class="dim3">chart only</div>'
     : lad.map(l => l.side === "mid"
       ? `<div class="lrow mid"><span class="bq dim3">spread</span><span class="px">${fmt(l.px)}</span><span class="aq dim3">${fmt(l.spread)}</span></div>`
       : `<div class="lrow" data-px="${l.px.toFixed(2)}" data-side="${l.side === "b" ? "buy" : "sell"}">` +
         `<span class="bar ${l.side}" style="width:${l.sz / maxSz * 100}%"></span>` +
         `<span class="bq">${l.side === "b" ? Math.round(l.sz).toLocaleString() : ""}</span>` +
         `<span class="px">${fmt(l.px)}</span>` +
-        `<span class="aq">${l.side === "a" ? Math.round(l.sz).toLocaleString() : ""}</span></div>`).join("");
+        `<span class="aq">${l.side === "a" ? Math.round(l.sz).toLocaleString() : ""}</span></div>`).join(""));
 
-  $("#tape").innerHTML = R.blind ? '<div style="padding:14px;text-align:center" class="dim3">chart only</div>'
+  setHTML($("#tape"), R.blind ? '<div style="padding:14px;text-align:center" class="dim3">chart only</div>'
     : R.tape(16).map(t => `<div class="r"><span class="dim3">${t[0]}</span>` +
       `<span class="${t[3] === "A" ? "up" : "down"}">${fmt(t[1])}</span>` +
-      `<span>${t[2].toLocaleString()}</span><span>${t[3]}</span></div>`).join("");
+      `<span>${t[2].toLocaleString()}</span><span>${t[3]}</span></div>`).join(""));
 
   const ps = Object.values(R.pos).filter(p => p.q);
-  $("#pos tbody").innerHTML = ps.length ? ps.map(p => {
+  setHTML($("#pos tbody"), ps.length ? ps.map(p => {
     const last = R.quote(p.tk)[2], pl = (last - p.avg) * p.q;
     const pct = (last / p.avg - 1) * 100 * (p.q > 0 ? 1 : -1);
     const k = pl >= 0 ? "up" : "down";
     return `<tr data-t="${p.tk}"><td>${p.tk}</td><td class="${p.q > 0 ? "up" : "down"}">${p.q}</td>` +
       `<td class="dim">${fmt(p.avg)}</td><td>${fmt(last)}</td>` +
       `<td class="${k}">${sgn(pl)}</td><td class="${k}">${sgn(pct)}%</td></tr>`;
-  }).join("") : '<tr><td colspan="6" class="dim3" style="text-align:center;padding:14px">flat</td></tr>';
+  }).join("") : '<tr><td colspan="6" class="dim3" style="text-align:center;padding:14px">flat</td></tr>');
 
   const work = R.orders.filter(o => o.status === "working");
   const bl = work.map(o => `<tr data-cancel="${o.id}"><td>${o.tk}</td>` +
@@ -1470,8 +1487,8 @@ function render() {
     .concat(R.fills.slice(-14).reverse().map(f => `<tr><td>${f.tk}</td>` +
       `<td class="${f.side === "buy" ? "up" : "down"}">${f.side}</td><td>${f.qty}</td>` +
       `<td>${fmt(f.px)}</td><td class="dim3">filled</td></tr>`));
-  $("#blot tbody").innerHTML = bl.length ? bl.join("")
-    : '<tr><td colspan="5" class="dim3" style="text-align:center;padding:14px">no orders yet</td></tr>';
+  setHTML($("#blot tbody"), bl.length ? bl.join("")
+    : '<tr><td colspan="5" class="dim3" style="text-align:center;padding:14px">no orders yet</td></tr>');
 
   renderFeed();
   drawChart(); drawEquity();
@@ -1601,9 +1618,55 @@ const setQty = v => { qty = Math.max(1, Math.floor(v)); $("#qty").value = qty; }
 $("#qUp").onclick = () => setQty(qty + 5);
 $("#qDn").onclick = () => setQty(qty - 5);
 $("#qty").onchange = e => setQty(parseInt(e.target.value) || 1);
+let hits = [], hitSel = 0;
+function searchSyms(q) {
+  q = q.trim().toUpperCase();
+  if (!q) return [];
+  const pre = [], mid = [], name = [];
+  for (const s of R.world.syms) {
+    if (s.tk === q) pre.unshift(s);
+    else if (s.tk.startsWith(q)) pre.push(s);
+    else if (s.tk.includes(q)) mid.push(s);
+    else if (s.name.toUpperCase().includes(q)) name.push(s);
+    if (pre.length > 40) break;
+  }
+  return pre.concat(mid, name).slice(0, 12);
+}
+function paintHits() {
+  const el = $("#symRes");
+  if (!hits.length) {
+    el.innerHTML = $("#symIn").value.trim()
+      ? '<div class="none">no symbol matches that</div>' : "";
+    el.classList.toggle("show", !!$("#symIn").value.trim());
+    return;
+  }
+  el.innerHTML = hits.map((s, i) =>
+    `<div class="hit ${i === hitSel ? "on" : ""}" data-pick="${s.tk}">` +
+    `<span class="tk">${s.tk}</span><span class="nm">${s.name}</span>` +
+    `<span class="sc">${s.kind === "stock" ? s.sector.split(" ")[0] : s.kind}</span></div>`).join("");
+  el.classList.add("show");
+}
+function closeHits() { hits = []; hitSel = 0; $("#symRes").classList.remove("show"); }
+function pickHit(tk) {
+  focusOn(tk);
+  $("#symIn").value = ""; closeHits(); $("#symIn").blur();
+}
+$("#symIn").oninput = e => { hits = searchSyms(e.target.value); hitSel = 0; paintHits(); };
+$("#symIn").onfocus = e => { if (e.target.value) { hits = searchSyms(e.target.value); paintHits(); } };
+$("#symIn").onblur = () => setTimeout(closeHits, 160);
 $("#symIn").onkeydown = e => {
-  if (e.key === "Enter") { focusOn(e.target.value); e.target.value = ""; e.target.blur(); }
   e.stopPropagation();
+  if (e.key === "ArrowDown") { e.preventDefault(); hitSel = Math.min(hits.length - 1, hitSel + 1); paintHits(); }
+  else if (e.key === "ArrowUp") { e.preventDefault(); hitSel = Math.max(0, hitSel - 1); paintHits(); }
+  else if (e.key === "Escape") { e.target.value = ""; closeHits(); e.target.blur(); }
+  else if (e.key === "Enter") {
+    const tk = hits.length ? hits[hitSel].tk : e.target.value;
+    pickHit(tk);
+  }
+};
+$("#symRes").onmousedown = e => {
+  const h = e.target.closest("[data-pick]");
+  if (h) { e.preventDefault(); pickHit(h.dataset.pick); }
 };
 $("#scanTabs").onclick = e => {
   const b = e.target.closest("[data-scan]"); if (!b) return;
@@ -1617,18 +1680,31 @@ $("#feedTabs").onclick = e => {
   document.querySelectorAll("[data-feed]").forEach(x => x.classList.toggle("on", x === b));
   render();
 };
-$("#feed").onclick = e => { const n = e.target.closest("[data-t]"); if (n) focusOn(n.dataset.t); };
-$("#scan").onclick = e => { const n = e.target.closest("[data-t]"); if (n) focusOn(n.dataset.t); };
-$("#wl").onclick = e => { const n = e.target.closest("[data-t]"); if (n) focusOn(n.dataset.t); };
-$("#pos").onclick = e => { const n = e.target.closest("[data-t]"); if (n) focusOn(n.dataset.t); };
-$("#blot").onclick = e => {
+/* mousedown, not click: these lists are rebuilt every frame, so the row under the
+   cursor is replaced between mousedown and mouseup and no click event ever fires. */
+function onPick(sel, fn) {
+  $(sel).addEventListener("mousedown", e => {
+    if (e.button !== 0) return;
+    const n = fn(e);
+    if (n) { e.preventDefault(); n(); }
+  });
+}
+const pickSym = e => {
+  const n = e.target.closest("[data-t]");
+  return n ? () => focusOn(n.dataset.t) : null;
+};
+onPick("#feed", pickSym);
+onPick("#scan", pickSym);
+onPick("#wl", pickSym);
+onPick("#pos", pickSym);
+onPick("#blot", e => {
   const n = e.target.closest("[data-cancel]");
-  if (n) { R.cancel(+n.dataset.cancel); render(); }
-};
-$("#ladder").onclick = e => {
+  return n ? () => { R.cancel(+n.dataset.cancel); render(); } : null;
+});
+onPick("#ladder", e => {
   const n = e.target.closest("[data-px]");
-  if (n) order(n.dataset.side, "limit", +n.dataset.px);
-};
+  return n ? () => order(n.dataset.side, "limit", +n.dataset.px) : null;
+});
 const chart = $("#chart");
 chart.addEventListener("wheel", e => {
   e.preventDefault();
@@ -1760,6 +1836,20 @@ function selfTest() {
   ok(r5.news.length > 0, `${r5.news.length} headlines have printed`);
   ok(r5.scan("gain", 12).length === 12 && r5.scan("gain", 12)[0].chg >= r5.scan("gain", 12)[11].chg,
      "scanner ranks gainers");
+  R = r5;
+  ok(searchSyms("NVD").some(x => x.tk === "NVDN"), "search finds a ticker by prefix");
+  ok(searchSyms("MACROSOFT").some(x => x.tk === "MCSF"), "search finds a symbol by company name");
+  ok(searchSyms("ZZQQXX").length === 0, "search returns nothing for a bad query");
+  const pick = searchSyms("GAM")[0];
+  focusOn(pick.tk);
+  ok(R.focus === pick.tk, `focus switches to a searched symbol (${R.focus})`);
+  focusOn("TSLR");
+  ok(R.focus === "TSLR", "focus switches by exact ticker");
+  const probe = document.createElement("div");
+  let writes = 0;
+  Object.defineProperty(probe, "innerHTML", { set() { writes++; }, get() { return ""; } });
+  setHTML(probe, "<b>a</b>"); setHTML(probe, "<b>a</b>"); setHTML(probe, "<b>b</b>");
+  ok(writes === 2, `setHTML skips redundant DOM rewrites (${writes} writes for 3 calls)`);
   const vpm = w.bars("NVDN", 500).v.reduce((a, b) => a + b, 0);
   ok(vpm > 2e6 && vpm < 6e8, `megacap daily volume ${(vpm / 1e6).toFixed(0)}M shares is plausible`);
   const lsz = Math.max(...r5.ladder().filter(l => l.sz).map(l => l.sz));
