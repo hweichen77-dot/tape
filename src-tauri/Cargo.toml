@@ -1,6 +1,6 @@
 [package]
 name = "tape"
-version = "1.0.0"
+version = "1.1.0"
 description = "Tape — day trading on a market that does not exist"
 edition = "2021"
 
@@ -13,6 +13,9 @@ tauri-build = { version = "2", features = [] }
 
 [dependencies]
 tauri = { version = "2", features = [] }
+serde_json = "1"
+tauri-plugin-window-state = "2"
+tauri-plugin-updater = "2"
 
 [profile.release]
 opt-level = "s"

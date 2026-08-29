@@ -216,10 +216,67 @@ align-items:center;justify-content:center;flex-direction:column;gap:12px;text-al
   .toosmall{display:flex}
 }
 .howto{display:grid;grid-template-columns:repeat(2,1fr);gap:1px;background:var(--line);
-border:1px solid var(--line);border-radius:3px;overflow:hidden}
+border:1px solid var(--line);border-radius:3px;overflow:hidden;flex-shrink:0}
 .howto div{background:var(--panel2);padding:9px 12px;font-size:12.5px;color:var(--ink2);line-height:1.45}
 .howto b{color:var(--amber);font-weight:600}
 @media (prefers-reduced-motion:reduce){*{animation:none!important}}
+
+.toasts{position:fixed;top:46px;left:50%;transform:translateX(-50%);z-index:70;display:flex;
+flex-direction:column;gap:5px;align-items:center;pointer-events:none}
+.toast{font-family:var(--mono);font-size:11.5px;padding:6px 13px;border-radius:3px;
+background:var(--panel);border:1px solid var(--line2);border-left:2px solid var(--amber);
+color:var(--ink);box-shadow:0 14px 34px -12px #000;animation:tin .16s ease-out;max-width:60vw}
+.toast.bad{border-left-color:var(--down)}
+.toast.good{border-left-color:var(--up)}
+@keyframes tin{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+
+.tfs{display:flex;gap:2px}
+.tfs b{font-family:var(--mono);font-size:10px;color:var(--ink3);padding:1px 5px;
+border-radius:2px;cursor:pointer;font-weight:500}
+.tfs b:hover{color:var(--ink)}
+.tfs b.on{color:var(--ground);background:var(--amber)}
+
+.presets{display:grid;grid-template-columns:repeat(4,1fr);gap:4px}
+.presets button{padding:3px 0;font-family:var(--mono);font-size:10.5px}
+.tkt2{display:grid;grid-template-columns:34px 1fr 34px 1fr;gap:5px;align-items:center}
+.tkt2 span{font-family:var(--mono);font-size:10px;color:var(--ink3)}
+.tkt2 input{padding:3px 6px;font-size:11px}
+.notional{font-family:var(--mono);font-size:10px;color:var(--ink3);display:flex;
+justify-content:space-between;gap:8px}
+.notional b{color:var(--ink2);font-weight:500}
+
+.rb{border:0;background:none;padding:0 3px;color:var(--ink3);font-family:var(--mono);
+font-size:11px;line-height:1;border-radius:2px}
+.rb:hover{color:var(--amber);border:0;background:rgba(255,176,32,.12)}
+td.act{width:52px;text-align:right;padding:1px 5px 1px 0}
+.hdot{display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--down);
+margin-right:4px;vertical-align:middle}
+
+.tape .r.me{background:rgba(255,176,32,.13)}
+.tape .r.me span:first-child{color:var(--amber)}
+
+.tg{display:flex;align-items:center;gap:6px}
+.tg b{font-weight:400;cursor:pointer;color:var(--ink3);border-bottom:1px solid transparent}
+.tg b:hover{color:var(--ink2)}
+.tg b.on{color:var(--amber);border-bottom-color:var(--amber)}
+#vSeed{cursor:pointer}
+#vSeed:hover{color:var(--amber)}
+
+.reviewbar{display:none;align-items:center;gap:14px;padding:0 13px;height:26px;
+background:var(--amberd);border-bottom:1px solid rgba(255,176,32,.4);font-family:var(--mono);
+font-size:11px;color:var(--amber)}
+.reviewbar.show{display:flex}
+#app.reviewing{grid-template-rows:38px 26px 1fr 172px 22px}
+
+.lb .r{cursor:pointer;border-radius:2px}
+.lb .r:hover{background:var(--amberd)}
+.resume{display:flex;align-items:center;gap:13px;padding:11px 14px;border:1px solid var(--line2);
+border-left:2px solid var(--amber);border-radius:0 3px 3px 0;background:var(--panel2);font-size:12.5px}
+.resume .txt{flex:1;color:var(--ink2);line-height:1.45}
+.resume .txt b{color:var(--ink);font-family:var(--mono);font-weight:500}
+.sharebox{font-family:var(--mono);font-size:12px;color:var(--ink2);background:var(--ground);
+border:1px solid var(--line);border-radius:3px;padding:9px 11px;line-height:1.7;word-break:break-word}
+@media (max-width:1400px){.statusbar .hint{display:none}}
 </style></head>
 <body>
 <div class="boot" id="boot">building market…</div>
@@ -228,6 +285,7 @@ border:1px solid var(--line);border-radius:3px;overflow:hidden}
   <span>It is a nine-panel trading terminal, so it wants at least 1080 by 560.
   Open it on a laptop or desktop, or widen this window.</span>
 </div>
+<div class="toasts" id="toasts"></div>
 <div id="app">
   <div class="topbar">
     <div class="brand"><i></i>TAPE</div>
@@ -256,6 +314,12 @@ border:1px solid var(--line);border-radius:3px;overflow:hidden}
     <div class="tm"><span class="k">best</span><span class="v" id="vBest">—</span></div>
   </div>
 
+  <div class="reviewbar" id="reviewBar">
+    <span>REVIEW</span>
+    <span id="reviewTxt" class="dim">click the equity curve to jump the chart to that session</span>
+    <button id="bReviewOut" style="margin-left:auto;padding:2px 9px">exit <kbd>esc</kbd></button>
+  </div>
+
   <div class="body">
     <div class="col l">
       <div class="pane" style="flex:1.7">
@@ -265,8 +329,8 @@ border:1px solid var(--line);border-radius:3px;overflow:hidden}
         <div class="scroll"><table id="scan"><thead><tr><th>Sym</th><th>Last</th><th>Chg%</th><th>RVol</th></tr></thead><tbody></tbody></table></div>
       </div>
       <div class="pane" style="flex:1">
-        <div class="ph">Watchlist</div>
-        <div class="scroll"><table id="wl"><thead><tr><th>Sym</th><th>Last</th><th>Chg%</th></tr></thead><tbody></tbody></table></div>
+        <div class="ph">Watchlist<span class="tabs"><b style="cursor:default"><kbd>w</kbd> add / drop</b></span></div>
+        <div class="scroll"><table id="wl"><thead><tr><th>Sym</th><th>Last</th><th>Chg%</th><th></th></tr></thead><tbody></tbody></table></div>
       </div>
     </div>
 
@@ -277,14 +341,18 @@ border:1px solid var(--line);border-radius:3px;overflow:hidden}
           <span class="last" id="cLast">—</span>
           <span class="mono" id="cChg" style="font-size:12.5px"></span>
           <span id="cHalt"></span>
-          <span class="dim3" id="cName" style="font-size:12px;margin-left:auto"></span>
+          <span class="dim3" id="cName" style="font-size:12px;margin-left:auto;overflow:hidden;
+            text-overflow:ellipsis;white-space:nowrap"></span>
+          <span class="tfs" id="tfs"><b data-tf="1" class="on">1m</b><b data-tf="5">5m</b>
+            <b data-tf="15">15m</b><b data-tf="60">1h</b><b data-vwap>VWAP</b></span>
           <span class="mono dim3" id="cZoom" style="font-size:10.5px">150 bars</span>
         </div>
         <div class="chartbox"><canvas id="chart"></canvas></div>
       </div>
       <div class="pane" style="height:150px">
         <div class="ph">Wire<span class="tabs" id="feedTabs">
-          <b data-feed="news" class="on">News</b><b data-feed="earn">Earnings</b><b data-feed="log">Log</b></span></div>
+          <b data-feed="news" class="on">News</b><b data-feed="mine">Mine</b>
+          <b data-feed="earn">Earnings</b><b data-feed="log">Log</b></span></div>
         <div class="scroll feed" id="feed"></div>
       </div>
     </div>
@@ -305,6 +373,19 @@ border:1px solid var(--line);border-radius:3px;overflow:hidden}
             <span>QTY</span><input id="qty" value="10">
             <button id="qDn">−</button><button id="qUp">+</button>
           </div>
+          <div class="presets">
+            <button data-bp="25">25%</button><button data-bp="50">50%</button>
+            <button data-bp="100">100%</button><button data-bp="max">max</button>
+          </div>
+          <div class="notional"><span id="qNote">—</span><b id="qBp">—</b></div>
+          <div class="tkt2">
+            <span>STOP</span><input id="tStop" placeholder="0.00" autocomplete="off">
+            <span>TGT</span><input id="tTgt" placeholder="0.00" autocomplete="off">
+          </div>
+          <div class="tkt2">
+            <span>RISK</span><input id="tRisk" value="1" autocomplete="off">
+            <button id="bSize" style="grid-column:3/5;padding:3px 0;font-size:11px">size to risk</button>
+          </div>
           <button id="bFlat" style="width:100%;padding:7px">FLATTEN ALL <kbd>f</kbd></button>
         </div>
       </div>
@@ -317,11 +398,12 @@ border:1px solid var(--line);border-radius:3px;overflow:hidden}
 
   <div class="bottom">
     <div class="pane" style="border-right:1px solid var(--line)">
-      <div class="ph">Positions</div>
-      <div class="scroll"><table id="pos"><thead><tr><th>Sym</th><th>Qty</th><th>Avg</th><th>Last</th><th>Open P&amp;L</th><th>%</th></tr></thead><tbody></tbody></table></div>
+      <div class="ph">Positions<span class="tabs"><b id="posTot" style="cursor:default"></b></span></div>
+      <div class="scroll"><table id="pos"><thead><tr><th>Sym</th><th>Qty</th><th>Avg</th><th>Last</th><th>Open P&amp;L</th><th>%</th><th></th></tr></thead><tbody></tbody></table></div>
     </div>
     <div class="pane" style="border-right:1px solid var(--line)">
-      <div class="ph">Working orders &amp; fills</div>
+      <div class="ph">Working orders &amp; fills<span class="tabs">
+        <b id="bCancelAll">cancel all</b></span></div>
       <div class="scroll"><table id="blot"><thead><tr><th>Sym</th><th>Side</th><th>Qty</th><th>Px</th><th>State</th></tr></thead><tbody></tbody></table></div>
     </div>
     <div class="pane">
@@ -336,8 +418,14 @@ border:1px solid var(--line);border-radius:3px;overflow:hidden}
     <div>drawdown <span id="vDd" class="mono">0.00</span></div>
     <div>burn <span id="vBurn" class="mono">—</span>/session</div>
     <div id="vMods">standard</div>
-    <div>synthetic market · no real prices, no real money</div>
-    <div><kbd>space</kbd> play <kbd>b</kbd>/<kbd>s</kbd> trade <kbd>f</kbd> flatten <kbd>n</kbd> step <kbd>o</kbd> open <kbd>/</kbd> symbol</div>
+    <div class="tg" id="apBar" title="stop the clock when this happens">
+      <span class="dim3">auto-pause</span>
+      <b data-ap="fill">fill</b><b data-ap="halt">halt</b><b data-ap="news">news</b>
+      <b data-ap="dd">−3%</b><b data-ap="recap">recap</b>
+    </div>
+    <div class="tg"><b id="bSound">sound</b></div>
+    <div class="hint" style="margin-left:auto">synthetic market · no real prices, no real money</div>
+    <div class="hint"><kbd>space</kbd> play <kbd>b</kbd>/<kbd>s</kbd> trade <kbd>f</kbd> flatten <kbd>n</kbd> step <kbd>o</kbd> open <kbd>/</kbd> symbol</div>
   </div>
 </div>
 
@@ -354,6 +442,11 @@ border:1px solid var(--line);border-radius:3px;overflow:hidden}
       run up to a full session per second, and it stops on its own at every close.</div>
     <div><b>Survive twenty sessions.</b> Rent comes out at every close, and under $25k you
       only get three day trades per five sessions. Score is what is left, adjusted for risk.</div>
+  </div>
+  <div class="resume" id="resumeBox" style="display:none">
+    <div class="txt" id="resumeTxt"></div>
+    <button id="bResume" class="on" style="padding:7px 15px">Resume</button>
+    <button id="bDiscard" style="padding:7px 12px">Discard</button>
   </div>
   <div class="row">
     <button id="bDaily" class="on" style="padding:8px 16px">Daily challenge</button>
@@ -373,7 +466,14 @@ border:1px solid var(--line);border-radius:3px;overflow:hidden}
 <div class="modal" id="perkModal"><div class="card">
   <h2 id="perkTitle">Session complete</h2>
   <p class="sub" id="perkSub"></p>
+  <div class="statgrid">
+    <div><div class="k">session P&amp;L</div><div class="v" id="rPl">—</div></div>
+    <div><div class="k">round trips</div><div class="v" id="rTr">—</div></div>
+    <div><div class="k">win rate</div><div class="v" id="rWin">—</div></div>
+    <div><div class="k">best / worst</div><div class="v" id="rBw">—</div></div>
+  </div>
   <div class="perks" id="perkGrid"></div>
+  <div class="row" id="recapRow"><button id="bContinue" class="on" style="flex:1;padding:9px">Continue <kbd>↵</kbd></button></div>
 </div></div>
 
 <div class="modal" id="modal"><div class="card">
@@ -386,8 +486,13 @@ border:1px solid var(--line);border-radius:3px;overflow:hidden}
     <div><div class="k">max drawdown</div><div class="v" id="mDd">—</div></div>
     <div><div class="k">fills</div><div class="v" id="mTr">—</div></div>
   </div>
-  <div style="font-size:11.5px;color:var(--ink3);font-family:var(--mono)">High scores</div>
+  <div class="sharebox" id="mShare"></div>
+  <div style="font-size:11.5px;color:var(--ink3);font-family:var(--mono)">High scores · click a row to replay that market and setup</div>
   <div class="lb" id="mLb"></div>
+  <div class="row">
+    <button id="mCopy" style="flex:1;padding:9px">Copy card</button>
+    <button id="mReview" style="flex:1;padding:9px">Review run</button>
+  </div>
   <div class="row">
     <button id="mAgain" style="flex:1;padding:9px">Run it again</button>
     <button id="mNew" class="on" style="flex:1;padding:9px">Change modifiers</button>
@@ -742,7 +847,7 @@ class World {
   dayF(day) {
     let f = this._dayF.get(day);
     if (f) return f;
-    if (this._dayF.size > 30) this._dayF.clear();
+    if (this._dayF.size > 56) this._dayF.clear();
     const N = MIN_DAY + 1, vs = this.volScale;
     const mkt = new Float64Array(N), sec = [];
     for (let i = 0; i < SECTORS.length; i++) sec.push(new Float64Array(N));
@@ -762,7 +867,7 @@ class World {
     const key = tk + "|" + day;
     let L = this._series.get(key);
     if (L) return L;
-    if (this._series.size > 400) this._series.clear();
+    if (this._series.size > 700) this._series.clear();
     const N = MIN_DAY + 1;
     const b = this.baskets[tk];
     if (b) {
@@ -798,7 +903,7 @@ class World {
     const key = tk + "|" + day;
     let B = this._bars.get(key);
     if (B) return B;
-    if (this._bars.size > 220) this._bars.clear();
+    if (this._bars.size > 700) this._bars.clear();
     const L = this.logSeries(tk, day), s = this.by[tk];
     const o = new Float64Array(MIN_DAY), h = new Float64Array(MIN_DAY);
     const l = new Float64Array(MIN_DAY), c = new Float64Array(MIN_DAY), v = new Float64Array(MIN_DAY);
@@ -877,12 +982,105 @@ const LS = {
   set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} },
 };
 const SCORE_KEY = "tape.scores.v1", GHOST_KEY = "tape.ghost.v1";
+const SAVE_KEY = "tape.run.v2", PREF_KEY = "tape.prefs.v1", WATCH_KEY = "tape.watch.v1";
+const AP_DEF = { fill: true, halt: true, news: true, dd: false, recap: true };
+const PREFS = Object.assign({ sound: true, vwap: false, tf: 1 }, LS.get(PREF_KEY, {}));
+PREFS.ap = Object.assign({}, AP_DEF, PREFS.ap || {});
+function savePrefs() { LS.set(PREF_KEY, PREFS); }
+
+const WATCH0 = ["SPDY","NDQX","NVDN","TSLR","ORCH","ADVM","PLNT","GSTP","BITX","MCSF","VXXY","HODD"];
+let watch = LS.get(WATCH_KEY, null);
+if (!Array.isArray(watch) || !watch.length) watch = WATCH0.slice();
+function saveWatch() { LS.set(WATCH_KEY, watch); }
+
+let QUIET = false, AC;
+function audio() {
+  if (AC === undefined) {
+    try { AC = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { AC = null; }
+  }
+  if (AC && AC.state === "suspended") AC.resume();
+  return AC;
+}
+function beep(freq, ms, wave, vol) {
+  if (!PREFS.sound || QUIET) return;
+  const c = audio(); if (!c) return;
+  try {
+    const o = c.createOscillator(), g = c.createGain(), t = c.currentTime;
+    o.type = wave; o.frequency.value = freq;
+    g.gain.setValueAtTime(.0001, t);
+    g.gain.exponentialRampToValueAtTime(vol, t + .006);
+    g.gain.exponentialRampToValueAtTime(.0001, t + ms / 1000);
+    o.connect(g); g.connect(c.destination);
+    o.start(t); o.stop(t + ms / 1000 + .02);
+  } catch (e) {}
+}
+const SND = {
+  fill() { beep(720, 50, "square", .045); },
+  resting() { beep(1040, 60, "square", .05); setTimeout(() => beep(1420, 55, "square", .04), 55); },
+  halt() { beep(150, 300, "sawtooth", .05); },
+  bell() { beep(660, 170, "sine", .055); setTimeout(() => beep(880, 300, "sine", .045), 125); },
+  bad() { beep(170, 110, "square", .045); },
+};
+
+function toast(msg, kind) {
+  const box = document.getElementById("toasts");
+  if (!box) return;
+  const el = document.createElement("div");
+  el.className = "toast" + (kind ? " " + kind : "");
+  el.textContent = msg;
+  box.appendChild(el);
+  while (box.children.length > 5) box.firstChild.remove();
+  setTimeout(() => {
+    el.style.transition = "opacity .3s"; el.style.opacity = "0";
+    setTimeout(() => el.remove(), 320);
+  }, 2800);
+}
+
+function copyText(txt) {
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(txt).then(() => toast("copied", "good"), () => legacyCopy(txt));
+      return;
+    }
+  } catch (e) {}
+  legacyCopy(txt);
+}
+function legacyCopy(txt) {
+  try {
+    const ta = document.createElement("textarea");
+    ta.value = txt; ta.style.position = "fixed"; ta.style.opacity = "0";
+    document.body.appendChild(ta); ta.select();
+    const ok = document.execCommand("copy");
+    ta.remove();
+    toast(ok ? "copied" : "could not copy", ok ? "good" : "bad");
+  } catch (e) { toast("could not copy", "bad"); }
+}
+
 function scores() { return LS.get(SCORE_KEY, []); }
-function bestScore() { const s = scores(); return s.length ? s[0].score : null; }
+function bestScore(mult) {
+  let s = scores();
+  if (mult !== undefined) s = s.filter(r => Math.abs(r.mult - mult) < .005);
+  return s.length ? s[0].score : null;
+}
 function saveScore(row) {
   const s = scores(); s.push(row); s.sort((a, b) => b.score - a.score);
-  LS.set(SCORE_KEY, s.slice(0, 20));
+  LS.set(SCORE_KEY, s.slice(0, 40));
 }
+
+const SAVE_V = 2;
+function saveRun(r) {
+  if (!r || r.finished) { clearSave(); return; }
+  LS.set(SAVE_KEY, {
+    v: SAVE_V, seed: r.seed, mk: r.mk, daily: r.daily, t: r.t, cash: r.cash,
+    pos: r.pos, orders: r.orders, oid: r.oid, ocoId: r.ocoId,
+    fills: r.fills.slice(-150), dayTrades: r.dayTrades, log: r.log.slice(-60),
+    perks: [...r.perks], peak: r.peak, maxDD: r.maxDD, curve: r.curve,
+    dayStart: r.dayStart, focus: r.focus, viewBars: r.viewBars, tf: r.tf,
+    sess: r.sess, pending: r.pendingPerks ? r.pendingPerks.map(p => p.id) : null,
+  });
+}
+function loadSave() { const s = LS.get(SAVE_KEY, null); return s && s.v === SAVE_V ? s : null; }
+function clearSave() { LS.set(SAVE_KEY, null); }
 function todaySeed() {
   const d = new Date();
   return d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
@@ -909,7 +1107,7 @@ function modLabel(p) {
 
 /* ---------------- the run ---------------- */
 const PDT_LIMIT = 3, PDT_WINDOW = 5, PDT_FLOOR = 25000;
-const WATCH = ["SPDY","NDQX","NVDN","TSLR","ORCH","ADVM","PLNT","GSTP","BITX","MCSF","VXXY","HODD"];
+const TFS = [1, 5, 15, 60], MAXBACK = 40, DD_PAUSE = -.03;
 
 class Run {
   constructor(seed, modKeys, daily) {
@@ -933,8 +1131,11 @@ class Run {
     this.pos = {}; this.orders = []; this.fills = []; this.dayTrades = [];
     this.log = []; this.perks = new Set(); this.perkStep = Math.max(1, Math.floor(this.days / 5));
     this.peak = this.cash0; this.maxDD = 0; this.curve = [this.cash0];
-    this.dayStart = this.cash0; this.finished = false; this.oid = 0;
+    this.dayStart = this.cash0; this.finished = false; this.oid = 0; this.ocoId = 0;
     this.halts = {}; this.burn = Math.max(15, Math.round(0.006 * this.cash0));
+    this.tf = TFS.indexOf(PREFS.tf) >= 0 ? PREFS.tf : 1;
+    this.sess = []; this.pauseMsg = null; this.ddFired = false;
+    this.reviewT = null; this.reviewMode = false; this.haltSeen = "";
     this.buildWire();
     this.wirePtr = 0; this.news = [];
     this.say(`run ${this.seed} armed · $${fmt(this.cash0, 0)} · ${this.days} sessions · ` +
@@ -1022,7 +1223,7 @@ class Run {
     return Math.round((this.equity() - this.cash0 - f * this.maxDD) / this.cash0 * 10000 * this.mult * 10) / 10;
   }
 
-  submit(tk, side, qty, kind, limit, stop) {
+  submit(tk, side, qty, kind, limit, stop, br) {
     tk = String(tk).toUpperCase();
     if (this.finished) return "the run is over";
     if (!this.world.by[tk]) return "no such symbol " + tk;
@@ -1031,8 +1232,22 @@ class Run {
     if (!this.isOpen() && !this.forceOpen) return "market is closed — press O to force it open";
     const hu = this.haltedUntil(tk);
     if (hu) return `${tk} is halted for ${Math.ceil(hu - this.t)} more minutes`;
+    const mid = this.quote(tk)[2];
+    if (kind === "stop") {
+      if (!(stop > 0)) return "a stop order needs a stop price";
+      if (side === "buy" && stop < mid) return `a buy stop belongs above ${fmt(mid)}`;
+      if (side === "sell" && stop > mid) return `a sell stop belongs below ${fmt(mid)}`;
+    }
+    if (kind === "limit" && !(limit > 0)) return "a limit order needs a price";
     const p = this.pos[tk];
     const closing = p && p.q && ((p.q > 0) !== (side === "buy"));
+    if (br && (br.stop > 0 || br.tgt > 0)) {
+      const long = side === "buy";
+      if (br.stop > 0 && (long ? br.stop >= mid : br.stop <= mid))
+        return `the stop is on the wrong side of ${fmt(mid)}`;
+      if (br.tgt > 0 && (long ? br.tgt <= mid : br.tgt >= mid))
+        return `the target is on the wrong side of ${fmt(mid)}`;
+    }
     if (this.pdtOn && closing && p.openedDay === this.day && this.equity() < PDT_FLOOR
         && this.pdtUsed() >= this.pdtLimit())
       return `pattern day trader rule: ${this.pdtLimit()} day trades used in the last ${PDT_WINDOW} sessions`;
@@ -1046,15 +1261,49 @@ class Run {
     this.oid++;
     const o = { id: this.oid, tk, side, qty, kind: kind || "market", limit: limit || 0, stop: stop || 0,
       status: "working" };
+    if (closing && o.kind !== "market") o.reduce = true;
+    if (br && (br.stop > 0 || br.tgt > 0) && !closing) o.br = { stop: br.stop || 0, tgt: br.tgt || 0 };
     this.orders.push(o);
     if (o.kind === "market") this.fill(o, this.quote(tk)[side === "buy" ? 1 : 0], "market");
-    else this.say(`${side} ${qty} ${tk} ${o.kind} @ ${(o.limit || o.stop).toFixed(2)} working`);
+    else {
+      this.say(`${side} ${qty} ${tk} ${o.kind} @ ${(o.limit || o.stop).toFixed(2)} working`);
+      SND.resting();
+    }
     return null;
+  }
+
+  attachBracket(o) {
+    const p = this.pos[o.tk];
+    if (!p || !p.q) return;
+    const side = p.q > 0 ? "sell" : "buy", g = "g" + (++this.ocoId), q = Math.abs(p.q);
+    const put = (kind, price) => {
+      this.oid++;
+      this.orders.push({ id: this.oid, tk: o.tk, side, qty: q, kind,
+        limit: kind === "limit" ? price : 0, stop: kind === "stop" ? price : 0,
+        status: "working", reduce: true, oco: g });
+    };
+    if (o.br.stop > 0) put("stop", o.br.stop);
+    if (o.br.tgt > 0) put("limit", o.br.tgt);
+    this.say(`bracket armed on ${o.tk}` +
+      (o.br.stop > 0 ? ` · stop ${o.br.stop.toFixed(2)}` : "") +
+      (o.br.tgt > 0 ? ` · target ${o.br.tgt.toFixed(2)}` : ""));
   }
 
   cancel(id) {
     const o = this.orders.find(x => x.id === id && x.status === "working");
     if (o) { o.status = "canceled"; this.say(`cancel #${id} ${o.tk}`); }
+  }
+  cancelAll() {
+    let n = 0;
+    for (const o of this.orders) if (o.status === "working") { o.status = "canceled"; n++; }
+    if (n) this.say(`cancelled ${n} working order${n === 1 ? "" : "s"}`);
+    return n;
+  }
+  closePos(tk, frac) {
+    const p = this.pos[tk];
+    if (!p || !p.q) return "no position in " + tk;
+    const q = Math.max(1, Math.min(Math.abs(p.q), Math.round(Math.abs(p.q) * (frac || 1))));
+    return this.submit(tk, p.q > 0 ? "sell" : "buy", q);
   }
   flatten() {
     this.orders.forEach(o => { if (o.status === "working") o.status = "canceled"; });
@@ -1071,9 +1320,11 @@ class Run {
     const p = this.pos[o.tk] || (this.pos[o.tk] = { tk: o.tk, q: 0, avg: 0, openedDay: -1 });
     const fee = (o.side === "buy" || !this.frictions || this.has("nofee")) ? 0
       : Math.max(.01, o.qty * px * .0000278 + o.qty * .000166);
+    let realized = 0;
     if (p.q && (p.q > 0) !== (sign > 0)) {
       if (p.openedDay === this.day) this.dayTrades.push(this.day);
-      const before = p.q;
+      const before = p.q, closed = Math.min(Math.abs(p.q), o.qty);
+      realized = (px - p.avg) * closed * (before > 0 ? 1 : -1) - fee;
       p.q += sign * o.qty;
       if (p.q === 0) p.openedDay = -1;
       else if ((p.q > 0) !== (before > 0)) { p.avg = px; p.openedDay = this.day; }
@@ -1084,15 +1335,62 @@ class Run {
     }
     this.cash -= sign * o.qty * px + fee;
     o.status = "filled"; o.avg = px;
-    this.fills.push({ tk: o.tk, side: o.side, qty: o.qty, px });
+    this.fills.push({ tk: o.tk, side: o.side, qty: o.qty, px, t: this.t, day: this.day, realized });
     if (this.fills.length > 300) this.fills.shift();
     this.say(`${o.side} ${o.qty} ${o.tk} @ ${px.toFixed(2)} (${why})`);
+    if (o.oco) for (const x of this.orders)
+      if (x !== o && x.oco === o.oco && x.status === "working") x.status = "canceled";
+    if (o.br) this.attachBracket(o);
+    if (why === "market") SND.fill();
+    else {
+      SND.resting();
+      this.pauseIf("fill", `${o.side} ${o.qty} ${o.tk} filled at ${px.toFixed(2)} · ${why}`);
+    }
+  }
+
+  pauseIf(kind, msg) {
+    if (!this.playing || !PREFS.ap[kind]) return;
+    this.playing = false;
+    this.pauseMsg = msg;
+  }
+
+  watchHalts() {
+    if (!this.haltsOn || !this.playing || !PREFS.ap.halt) return;
+    for (const k in this.pos) {
+      if (!this.pos[k].q) continue;
+      const u = this.haltedUntil(k);
+      if (!u) continue;
+      const tag = k + ":" + u;
+      if (this.haltSeen === tag) continue;
+      this.haltSeen = tag;
+      SND.halt();
+      this.pauseIf("halt", `${k} is halted — you are ${this.pos[k].q > 0 ? "long" : "short"} ${Math.abs(this.pos[k].q)}`);
+      return;
+    }
+  }
+
+  recapOf(day) {
+    const f = this.fills.filter(x => x.day === day);
+    const rt = f.filter(x => x.realized);
+    let best = null, worst = null;
+    for (const x of rt) {
+      if (!best || x.realized > best.realized) best = x;
+      if (!worst || x.realized < worst.realized) worst = x;
+    }
+    return { day, fills: f.length, rt: rt.length,
+      wins: rt.filter(x => x.realized > 0).length, best, worst };
   }
 
   workOrders() {
     const mi = Math.max(0, Math.floor(this.t) - 1);
     for (const o of this.orders) {
       if (o.status !== "working") continue;
+      if (o.reduce) {
+        const p = this.pos[o.tk];
+        const room = !p ? 0 : (o.side === "sell" ? Math.max(0, p.q) : Math.max(0, -p.q));
+        if (!room) { o.status = "canceled"; continue; }
+        if (o.qty > room) o.qty = room;
+      }
       if (this.haltedUntil(o.tk)) continue;
       const b = this.bar(o.tk, mi);
       if (o.kind === "limit") {
@@ -1109,9 +1407,10 @@ class Run {
     while (this.wirePtr < this.wire.length && this.wire[this.wirePtr].t <= this.t) {
       const e = this.wire[this.wirePtr++];
       const s = this.world.by[e.tk];
-      this.news.unshift({ t: e.t, tk: e.tk, kind: e.kind, move: e.j * 100,
-        h: headline(e.kind, s.name, s.seed, e.k) });
+      const h = headline(e.kind, s.name, s.seed, e.k);
+      this.news.unshift({ t: e.t, tk: e.tk, kind: e.kind, move: e.j * 100, h });
       if (this.news.length > 120) this.news.pop();
+      if (this.pos[e.tk] && this.pos[e.tk].q) this.pauseIf("news", `${e.tk} — ${h}`);
     }
   }
 
@@ -1125,6 +1424,12 @@ class Run {
       if (eq > this.peak) this.peak = eq;
       if (this.peak - eq > this.maxDD) this.maxDD = this.peak - eq;
       if (this.minute === 0) { this.closeSession(); return true; }
+      this.watchHalts();
+      if (!this.ddFired && this.dayStart > 0 && (eq - this.dayStart) / this.dayStart <= DD_PAUSE) {
+        this.ddFired = true;
+        this.pauseIf("dd", `day P&L ${sgn((eq - this.dayStart) / this.dayStart * 100, 1)}% — clock stopped`);
+      }
+      if (this.pauseMsg) return false;
     }
     return false;
   }
@@ -1135,11 +1440,16 @@ class Run {
     if (this.has("rebate") && this.cash > 0) this.cash += this.cash * .0005;
     const eq = this.equity();
     this.curve.push(eq);
+    this.sess.push(Object.assign(this.recapOf(this.day - 1),
+      { session: this.session, pl: eq - this.dayStart, equity: eq, burn: b }));
     this.dayStart = eq;
     this.playing = false;
+    this.ddFired = false;
     this.say(`session ${this.session} closed · burn $${fmt(b, 0)} · equity $${fmt(eq, 2)}`);
     if (this.session >= this.days || eq <= 0) { this.finish(); return; }
     if (this.session % this.perkStep === 0 && this.perks.size < 5) this.offerPerks();
+    SND.bell();
+    saveRun(this);
   }
 
   offerPerks() {
@@ -1165,24 +1475,65 @@ class Run {
     const sc = this.score();
     saveScore({ score: sc, seed: this.seed, equity: Math.round(eq * 100) / 100,
       maxdd: Math.round(this.maxDD * 100) / 100, mult: this.mult, label: modLabel(this.mk),
-      daily: this.daily, perks: [...this.perks].map(p => PERK_BY[p].n) });
+      daily: this.daily, mk: this.mk, fills: this.fills.length,
+      perks: [...this.perks].map(p => PERK_BY[p].n) });
     const norm = this.curve.map(x => x / this.cash0);
     const g = LS.get(GHOST_KEY, null);
     if (!g || sc > g.score) LS.set(GHOST_KEY, { score: sc, curve: norm, seed: this.seed });
     this.say(`run over · equity $${fmt(eq, 2)} · score ${fmt(sc, 1)}`);
+    clearSave();
   }
 
+  card() {
+    const c = this.curve, lo = Math.min(...c), hi = Math.max(...c);
+    const bl = "▁▂▃▄▅▆▇█", sp = (hi - lo) || 1;
+    const spark = c.map(v => bl[Math.min(7, Math.floor((v - lo) / sp * 8))]).join("");
+    return `TAPE · seed ${this.seed} · ${this.days} sessions · ${this.mult}×\n` +
+      `score ${fmt(this.score(), 0)} · equity $${fmt(this.equity(), 0)} · ` +
+      `max DD $${fmt(this.maxDD, 0)}\n${spark}`;
+  }
+
+  viewT() { return Math.floor(this.reviewT === null ? this.t : this.reviewT); }
+
   snapshot() {
-    const n = this.viewBars, d = this.day, m = Math.max(1, this.minute);
-    const back = m >= n ? 0 : Math.min(8, Math.ceil((n - m) / MIN_DAY));
-    const rows = [];
-    const total = back * MIN_DAY + m, start = Math.max(0, total - n);
-    for (let i = start; i < total; i++) {
-      const dd = d - back + Math.floor(i / MIN_DAY), mm = i % MIN_DAY;
+    const tf = TFS.indexOf(this.tf) >= 0 ? this.tf : 1;
+    const n = Math.max(10, this.viewBars);
+    const now = this.viewT(), d = Math.floor(now / MIN_DAY);
+    const m = Math.max(1, now - d * MIN_DAY);
+    const perDay = Math.ceil(MIN_DAY / tf);
+    let back = 0;
+    while (Math.ceil(m / tf) + back * perDay < n && back < MAXBACK && d - back - 1 >= 0) back++;
+    const rows = [], times = [];
+    for (let dd = d - back; dd <= d; dd++) {
+      const lim = dd === d ? m : MIN_DAY;
       const B = this.world.bars(this.focus, dd);
-      rows.push([B.o[mm], B.h[mm], B.l[mm], B.c[mm], B.v[mm]]);
+      for (let a = 0; a < lim; a += tf) {
+        const b = Math.min(a + tf, lim);
+        let hi = -Infinity, lo = Infinity, v = 0;
+        for (let i = a; i < b; i++) {
+          if (B.h[i] > hi) hi = B.h[i];
+          if (B.l[i] < lo) lo = B.l[i];
+          v += B.v[i];
+        }
+        rows.push([B.o[a], hi, lo, B.c[b - 1], v]);
+        times.push(dd * MIN_DAY + a);
+      }
     }
-    return { rows, t0: (d - back) * MIN_DAY + start };
+    const cut = Math.max(0, rows.length - n);
+    return { rows: rows.slice(cut), times: times.slice(cut), tf, t0: times[cut] || 0 };
+  }
+
+  vwapOf(snap) {
+    const out = [];
+    let pv = 0, vv = 0, day = -1;
+    for (let i = 0; i < snap.rows.length; i++) {
+      const dd = Math.floor(snap.times[i] / MIN_DAY);
+      if (dd !== day) { day = dd; pv = 0; vv = 0; }
+      const r = snap.rows[i], tp = (r[1] + r[2] + r[3]) / 3;
+      pv += tp * r[4]; vv += r[4];
+      out.push(vv > 0 ? pv / vv : r[3]);
+    }
+    return out;
   }
 
   ladder() {
@@ -1264,6 +1615,25 @@ class Run {
   }
 }
 
+Run.restore = function (s) {
+  const r = new Run(s.seed, s.mk, s.daily);
+  if (!r.world.by[s.focus]) s.focus = "SPDY";
+  r.t = s.t; r.cash = s.cash; r.pos = s.pos || {}; r.orders = s.orders || [];
+  r.oid = s.oid || 0; r.ocoId = s.ocoId || 0; r.fills = s.fills || [];
+  r.dayTrades = s.dayTrades || []; r.log = s.log || [];
+  r.perks = new Set(s.perks || []); r.sess = s.sess || [];
+  r.peak = s.peak || r.cash0; r.maxDD = s.maxDD || 0;
+  r.curve = (s.curve && s.curve.length) ? s.curve : [r.cash0];
+  r.dayStart = s.dayStart || r.cash0; r.focus = s.focus;
+  r.viewBars = s.viewBars || 150;
+  r.tf = TFS.indexOf(s.tf) >= 0 ? s.tf : 1;
+  r.pendingPerks = s.pending ? s.pending.map(id => PERK_BY[id]).filter(Boolean) : null;
+  if (r.pendingPerks && !r.pendingPerks.length) r.pendingPerks = null;
+  r.news = []; r.wirePtr = 0; r.pumpWire();
+  r.say(`restored at session ${Math.min(r.session + 1, r.days)} · equity $${fmt(r.equity(), 2)}`);
+  return r;
+};
+
 /* ---------------- helpers ---------------- */
 function pad2(n) { return String(n).padStart(2, "0"); }
 function fmt(v, d) {
@@ -1274,8 +1644,9 @@ function fmt(v, d) {
 function sgn(v, d) { return (v >= 0 ? "+" : "") + fmt(v, d); }
 const $ = s => document.querySelector(s);
 
-let R = null, qty = 10, picks = {}, geom = null, hover = null;
+let R = null, qty = 10, picks = {}, geom = null, hover = null, eqGeom = null;
 let scanMode = "gain", feedTab = "news", zoomN = 150, prevVals = {};
+let flatArm = 0;
 
 function setHTML(el, html) { if (el._h !== html) { el._h = html; el.innerHTML = html; } }
 
@@ -1302,7 +1673,8 @@ function drawChart() {
   const sp0 = (hi - lo) || 1; lo -= sp0 * .08; hi += sp0 * .08;
   const sp = hi - lo, Y = p => padT + (hi - p) / sp * H;
   const bw = W / bars.length;
-  geom = { padT, padB, W, H, bw, price: y => hi - (y - padT) / H * sp, t0: snap.t0, bars };
+  geom = { padT, padB, W, H, bw, price: y => hi - (y - padT) / H * sp, t0: snap.t0,
+    times: snap.times, tf: snap.tf, bars, lines: [] };
 
   ctx.strokeStyle = "rgba(27,35,48,.75)"; ctx.lineWidth = 1;
   ctx.font = '10px "IBM Plex Mono", monospace'; ctx.textBaseline = "middle"; ctx.textAlign = "left";
@@ -1326,6 +1698,49 @@ function drawChart() {
     const t = Y(Math.max(b[0], b[3])), bo = Y(Math.min(b[0], b[3]));
     ctx.fillRect(i * bw + .5, t, Math.max(1, bw - 1.4), Math.max(1, bo - t));
   }
+  if (PREFS.vwap) {
+    const vw = R.vwapOf(snap);
+    ctx.strokeStyle = "rgba(122,162,255,.85)"; ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    for (let i = 0; i < vw.length; i++) {
+      const x = i * bw + bw / 2, y = Y(vw[i]);
+      if (i && Math.floor(snap.times[i] / MIN_DAY) === Math.floor(snap.times[i - 1] / MIN_DAY))
+        ctx.lineTo(x, y); else ctx.moveTo(x, y);
+    }
+    ctx.stroke(); ctx.lineWidth = 1;
+    ctx.fillStyle = "rgba(122,162,255,.85)"; ctx.font = '600 9.5px "IBM Plex Mono", monospace';
+    ctx.textAlign = "left"; ctx.fillText("VWAP", 6, Y(vw[vw.length - 1]) - 6);
+  }
+
+  const t0 = snap.times[0], tEnd = snap.times[snap.times.length - 1] + snap.tf;
+  const xAt = t => Math.max(0, Math.min(W, (t - t0) / (tEnd - t0) * W));
+  for (const f of R.fills) {
+    if (f.tk !== R.focus || f.t < t0 || f.t > tEnd) continue;
+    const x = xAt(f.t), y = Y(f.px), up = f.side === "buy";
+    ctx.fillStyle = up ? "rgba(47,191,113,.95)" : "rgba(232,83,90,.95)";
+    ctx.beginPath();
+    ctx.moveTo(x, up ? y + 8 : y - 8);
+    ctx.lineTo(x - 4.2, up ? y + 14 : y - 14);
+    ctx.lineTo(x + 4.2, up ? y + 14 : y - 14);
+    ctx.closePath(); ctx.fill();
+  }
+
+  for (const o of R.orders) {
+    if (o.status !== "working" || o.tk !== R.focus) continue;
+    const px = o.limit || o.stop;
+    if (!(px > 0) || px < lo || px > hi) continue;
+    const y = Math.round(Y(px)) + .5;
+    const col = o.side === "buy" ? "#2FBF71" : "#E8535A";
+    ctx.strokeStyle = col; ctx.setLineDash([2, 4]);
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); ctx.setLineDash([]);
+    const tag = `${o.kind === "stop" ? "STP" : "LMT"} ${o.side === "buy" ? "+" : "−"}${o.qty}`;
+    ctx.font = '600 9.5px "IBM Plex Mono", monospace';
+    const tw = ctx.measureText(tag).width + 10;
+    ctx.fillStyle = col; ctx.fillRect(W - tw, y - 6.5, tw, 13);
+    ctx.fillStyle = "#06080B"; ctx.textAlign = "left"; ctx.fillText(tag, W - tw + 5, y);
+    geom.lines.push({ id: o.id, y });
+  }
+
   const p = R.pos[R.focus];
   if (p && p.q) {
     const y = Math.round(Y(p.avg)) + .5;
@@ -1333,7 +1748,7 @@ function drawChart() {
     ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); ctx.setLineDash([]);
     ctx.fillStyle = "#FFB020"; ctx.fillRect(0, y - 7, 76, 14);
     ctx.fillStyle = "#06080B"; ctx.font = '600 10px "IBM Plex Mono", monospace';
-    ctx.fillText((p.q > 0 ? "LONG " : "SHORT ") + Math.abs(p.q), 5, y);
+    ctx.textAlign = "left"; ctx.fillText((p.q > 0 ? "LONG " : "SHORT ") + Math.abs(p.q), 5, y);
   }
   const last = bars[bars.length - 1][3], yl = Y(last);
   ctx.fillStyle = last >= bars[bars.length - 1][0] ? "#2FBF71" : "#E8535A";
@@ -1351,7 +1766,7 @@ function drawChart() {
     ctx.fillStyle = "#FFB020"; ctx.fillRect(W, hover.y - 8, padR, 16);
     ctx.fillStyle = "#06080B"; ctx.font = '600 10px "IBM Plex Mono", monospace';
     ctx.textAlign = "left"; ctx.fillText(geom.price(hover.y).toFixed(2), W + 7, hover.y);
-    const mi = snap.t0 + i, tw = 42, tx = Math.min(W - tw, Math.max(0, cx - tw / 2));
+    const mi = snap.times[i], tw = 42, tx = Math.min(W - tw, Math.max(0, cx - tw / 2));
     ctx.fillStyle = "#FFB020"; ctx.fillRect(tx, padT + H, tw, padB);
     ctx.fillStyle = "#06080B"; ctx.textAlign = "center";
     ctx.fillText(pad2(Math.floor((570 + mi % MIN_DAY) / 60)) + ":" + pad2((570 + mi % MIN_DAY) % 60),
@@ -1383,6 +1798,7 @@ function drawEquity() {
   const sp = (hi - lo) || 1;
   const nPts = Math.max(live.length, gc ? Math.min(gc.length, R.days + 2) : 0, 2);
   const X = i => pad + i / (nPts - 1) * W, Y = v => pad + (hi - v) / sp * H;
+  eqGeom = { pad, W, nPts, n: live.length };
   const y0 = Y(R.cash0);
   ctx.strokeStyle = "rgba(237,242,247,.22)"; ctx.setLineDash([3, 3]);
   ctx.beginPath(); ctx.moveTo(pad, y0); ctx.lineTo(pad + W, y0); ctx.stroke(); ctx.setLineDash([]);
@@ -1437,7 +1853,17 @@ function renderFeed() {
     }).join("") : '<div class="n"><span></span><span></span><span class="dim3">no earnings scheduled in this run</span><span></span></div>');
     return;
   }
-  setHTML(el, R.news.length ? R.news.slice(0, 40).map(n => {
+  let feed = R.news;
+  if (feedTab === "mine") {
+    const mine = new Set(watch.concat(Object.keys(R.pos).filter(k => R.pos[k].q)));
+    feed = R.news.filter(n => mine.has(n.tk));
+    if (!feed.length) {
+      setHTML(el, '<div class="n"><span></span><span></span><span class="dim3">' +
+        'nothing on the wire about what you hold or watch</span><span></span></div>');
+      return;
+    }
+  }
+  setHTML(el, feed.length ? feed.slice(0, 40).map(n => {
     const cls = n.move >= 0 ? "up" : "down";
     return `<div class="n" data-t="${n.tk}"><span class="t">` +
       `${pad2(Math.floor((570 + n.t % MIN_DAY) / 60))}:${pad2((570 + n.t % MIN_DAY) % 60)}</span>` +
@@ -1461,7 +1887,7 @@ function render() {
     ? `<span class="${R.pdtUsed() >= R.pdtLimit() ? "down" : ""}">${R.pdtUsed()} / ${R.pdtLimit()}</span>`
     : '<span class="dim3">off</span>';
   $("#vScore").innerHTML = `${fmt(R.score(), 0)} <span class="dim3" style="font-size:10px">${R.mult}×</span>`;
-  const bs = bestScore();
+  const bs = bestScore(R.mult);
   $("#vBest").textContent = bs === null ? "—" : fmt(bs, 0);
   $("#vSeed").textContent = R.seed;
   $("#vSpeed").textContent = R.playing ? R.speed + "× running" : "paused";
@@ -1471,13 +1897,23 @@ function render() {
   $("#bPlay").textContent = R.playing ? "❚❚" : "▶";
   $("#bPlay").classList.toggle("on", R.playing);
   $("#bOpen").classList.toggle("on", R.forceOpen);
+  $("#app").classList.toggle("reviewing", R.reviewMode);
+  $("#reviewBar").classList.toggle("show", R.reviewMode);
   setHTML($("#perkChips"), [...R.perks].map(p => `<span class="chip">${PERK_BY[p].n}</span>`).join(""));
 
   const s = R.world.by[R.focus];
   $("#cSym").textContent = R.focus;
   $("#cName").textContent = s.name;
   $("#cZoom").textContent = R.viewBars + " bars · scroll to zoom";
+  document.querySelectorAll("[data-tf]").forEach(b => b.classList.toggle("on", +b.dataset.tf === R.tf));
+  $("[data-vwap]").classList.toggle("on", !!PREFS.vwap);
+  $("#bSound").classList.toggle("on", !!PREFS.sound);
+  document.querySelectorAll("[data-ap]").forEach(b => b.classList.toggle("on", !!PREFS.ap[b.dataset.ap]));
   const q = R.quote(R.focus);
+  $("#qNote").textContent = `${qty} \u00d7 ${fmt(q[1])} = $${fmt(qty * q[1], 0)}`;
+  const bpLeft = R.bp() - qty * q[1];
+  $("#qBp").textContent = `$${fmt(R.bp(), 0)} bp`;
+  $("#qBp").className = bpLeft < 0 ? "down" : "";
   const c2 = $("#cLast"); flash(c2, "last", Math.round(q[2] * 100)); c2.textContent = fmt(q[2]);
   const dayOpen = R.px(R.focus, R.day * MIN_DAY);
   const ch = (q[2] / dayOpen - 1) * 100;
@@ -1492,7 +1928,7 @@ function render() {
     `<td>${fmt(x.last)}</td><td class="${x.chg >= 0 ? "up" : "down"}">${sgn(x.chg)}</td>` +
     `<td class="dim">${fmt(x.rv, 1)}</td></tr>`).join(""));
 
-  setHTML($("#wl tbody"), WATCH.map(tk => {
+  setHTML($("#wl tbody"), watch.map(tk => {
     const p = R.quote(tk)[2], o = R.px(tk, R.day * MIN_DAY), c = (p / o - 1) * 100;
     return `<tr data-t="${tk}" class="${tk === R.focus ? "sel" : ""}"><td>${tk}</td>` +
       `<td>${fmt(p)}</td><td class="${c >= 0 ? "up" : "down"}">${sgn(c)}</td></tr>`;
@@ -1571,10 +2007,32 @@ function openSetup() {
   const done = scores().some(s => s.daily && s.seed === ds);
   $("#dailyNote").textContent = done ? "already played today — you can replay it" :
     "same market for everyone today · 5 sessions";
+  const sv = loadSave();
+  $("#resumeBox").style.display = sv ? "flex" : "none";
+  if (sv) {
+    const mk = parseMods(sv.mk), c = sv.curve || [];
+    const sess = Math.min(c.length, parseInt(mk.days));
+    $("#resumeTxt").innerHTML = `Saved run <b>${sv.seed}</b> · ${modLabel(mk)} · session ` +
+      `<b>${sess}</b> of <b>${mk.days}</b> · equity <b>$${fmt(c[c.length - 1], 0)}</b>`;
+  }
   $("#modal").classList.remove("show");
   $("#perkModal").classList.remove("show");
   $("#setup").classList.add("show");
 }
+$("#bResume").onclick = () => {
+  const sv = loadSave();
+  if (!sv) { toast("no saved run", "bad"); $("#resumeBox").style.display = "none"; return; }
+  R = Run.restore(sv);
+  prevVals = {}; hover = null; zoomN = R.viewBars;
+  $("#setup").classList.remove("show");
+  render();
+  if (R.pendingPerks) showPerks();
+};
+$("#bDiscard").onclick = () => {
+  clearSave();
+  $("#resumeBox").style.display = "none";
+  toast("saved run discarded");
+};
 
 function startRun(seed, modKeys, daily) {
   $("#boot").style.display = "flex";
@@ -1604,10 +2062,23 @@ function showPerks() {
   $("#perkSub").innerHTML = `Equity <b class="mono">$${fmt(eq)}</b> · ` +
     `${eq >= R.cash0 ? '<span class="up">' : '<span class="down">'}${sgn(eq - R.cash0)}</span> on the run. ` +
     `Pick one. It lasts the rest of the run.`;
-  $("#perkGrid").innerHTML = list.map(p =>
+  const rc = R.sess[R.sess.length - 1] || R.recapOf(R.day - 1);
+  const pl = rc.pl === undefined ? 0 : rc.pl;
+  $("#rPl").textContent = sgn(pl);
+  $("#rPl").className = "v " + (pl >= 0 ? "up" : "down");
+  $("#rTr").textContent = rc.rt;
+  $("#rWin").textContent = rc.rt ? Math.round(rc.wins / rc.rt * 100) + "%" : "—";
+  $("#rBw").innerHTML = rc.best
+    ? `<span class="up">${sgn(rc.best.realized)}</span> <span class="dim3">/</span> ` +
+      `<span class="down">${sgn(rc.worst.realized)}</span>`
+    : "—";
+  $("#perkGrid").innerHTML = (list || []).map(p =>
     `<button class="perk" data-perk="${p.id}"><span class="pn">${p.n}</span><span class="pd">${p.d}</span></button>`).join("");
+  $("#perkGrid").style.display = list ? "" : "none";
+  $("#recapRow").style.display = list ? "none" : "";
   $("#perkModal").classList.add("show");
 }
+$("#bContinue").onclick = () => { $("#perkModal").classList.remove("show"); render(); };
 $("#perkGrid").onclick = e => {
   const b = e.target.closest("[data-perk]");
   if (!b) return;
@@ -1634,10 +2105,47 @@ function showEnd() {
     `<div class="r ${r.seed === R.seed ? "me" : ""}"><span>${i + 1}</span>` +
     `<span>${r.daily ? "daily · " : ""}${r.label}</span><span>${r.mult}×</span>` +
     `<span>${fmt(r.score, 0)}</span></div>`).join("") || '<div class="dim3">no runs yet</div>';
+  $("#mShare").textContent = R.card();
   $("#modal").classList.add("show");
 }
 $("#mAgain").onclick = () => startRun("", R.mk, false);
 $("#mNew").onclick = openSetup;
+$("#mCopy").onclick = () => copyText(R.card());
+$("#mReview").onclick = () => {
+  $("#modal").classList.remove("show");
+  enterReview(R.curve.length - 1);
+};
+$("#mLb").onclick = e => {
+  const row = e.target.closest(".r");
+  if (!row) return;
+  const rec = scores()[[...$("#mLb").children].indexOf(row)];
+  if (rec) startRun(String(rec.seed), rec.mk, false);
+};
+
+/* ---------------- review ---------------- */
+function enterReview(i) {
+  const sess = Math.max(0, Math.min(R.curve.length - 1, Math.round(i)));
+  R.playing = false;
+  R.reviewMode = true;
+  R.reviewT = Math.min(R.t, (R.startDay + sess) * MIN_DAY + MIN_DAY - 1);
+  const rc = R.sess[sess - 1];
+  $("#reviewTxt").innerHTML = sess === 0 ? "before the first session"
+    : `session <b>${sess}</b> · P&L <span class="${rc && rc.pl >= 0 ? "up" : "down"}">` +
+      `${rc ? sgn(rc.pl) : "—"}</span> · equity <b>$${fmt(R.curve[sess], 0)}</b>`;
+  render();
+}
+function exitReview() {
+  if (!R || !R.reviewMode) return;
+  R.reviewMode = false; R.reviewT = null;
+  render();
+}
+$("#bReviewOut").onclick = exitReview;
+$("#eq").addEventListener("mousedown", e => {
+  if (!R || !eqGeom) return;
+  const r = e.currentTarget.getBoundingClientRect();
+  const f = (e.clientX - r.left - eqGeom.pad) / eqGeom.W;
+  enterReview(f * (eqGeom.nPts - 1));
+});
 
 /* ---------------- input ---------------- */
 function focusOn(tk) {
@@ -1650,14 +2158,43 @@ $("#bOpen").onclick = () => { R.forceOpen = !R.forceOpen; render(); };
 $("#bFlat").onclick = () => { R.flatten(); render(); };
 $("#bBuy").onclick = () => order("buy");
 $("#bSell").onclick = () => order("sell");
+const numIn = sel => { const v = parseFloat($(sel).value); return isFinite(v) && v > 0 ? v : 0; };
 function order(side, kind, px) {
-  const err = R.submit(R.focus, side, qty, kind, kind === "limit" ? px : 0, 0);
-  if (err) R.say("rejected: " + err);
+  const br = { stop: numIn("#tStop"), tgt: numIn("#tTgt") };
+  const err = R.submit(R.focus, side, qty, kind, kind === "limit" ? px : 0, 0, br);
+  if (err) { R.say("rejected: " + err); toast(err, "bad"); }
+  else { $("#tStop").value = ""; $("#tTgt").value = ""; }
   render();
 }
+
+$("#bCancelAll").onclick = () => { R.cancelAll(); render(); };
+document.querySelectorAll("[data-bp]").forEach(b => b.onclick = () => {
+  const ask = R.quote(R.focus)[1];
+  const frac = b.dataset.bp === "max" ? 1 : +b.dataset.bp / 100;
+  setQty(Math.max(1, Math.floor(R.bp() * frac / Math.max(ask, .01))));
+  render();
+});
+$("#bSize").onclick = () => {
+  const stop = numIn("#tStop"), risk = parseFloat($("#tRisk").value);
+  if (!stop) { toast("set a stop first", "bad"); return; }
+  if (!(risk > 0)) { toast("risk must be a percent above zero", "bad"); return; }
+  const last = R.quote(R.focus)[2], per = Math.abs(last - stop);
+  if (per < .005) { toast("stop is too close to the price", "bad"); return; }
+  setQty(Math.max(1, Math.floor(R.equity() * risk / 100 / per)));
+  render();
+};
 document.querySelectorAll("[data-speed]").forEach(b => b.onclick = () => {
   document.querySelectorAll("[data-speed]").forEach(x => x.classList.remove("on"));
   b.classList.add("on"); R.speed = +b.dataset.speed; render();
+});
+$("#tfs").onclick = e => {
+  const b = e.target.closest("[data-tf]");
+  if (b) { R.tf = +b.dataset.tf; PREFS.tf = R.tf; savePrefs(); render(); return; }
+  if (e.target.closest("[data-vwap]")) { PREFS.vwap = !PREFS.vwap; savePrefs(); render(); }
+};
+$("#bSound").onclick = () => { PREFS.sound = !PREFS.sound; savePrefs(); if (PREFS.sound) SND.bell(); render(); };
+document.querySelectorAll("[data-ap]").forEach(b => b.onclick = () => {
+  PREFS.ap[b.dataset.ap] = !PREFS.ap[b.dataset.ap]; savePrefs(); render();
 });
 const setQty = v => { qty = Math.max(1, Math.floor(v)); $("#qty").value = qty; };
 $("#qUp").onclick = () => setQty(qty + 5);
@@ -1770,12 +2307,19 @@ addEventListener("keydown", e => {
   if ($("#setup").classList.contains("show") || $("#modal").classList.contains("show")
       || $("#perkModal").classList.contains("show")) return;
   const k = e.key.toLowerCase();
+  if (k === "escape") { exitReview(); return; }
   if (k === " ") { e.preventDefault(); R.playing = !R.playing; }
   else if (k === "b") order("buy");
   else if (k === "s") order("sell");
   else if (k === "f") R.flatten();
   else if (k === "n") { if (R.step(1)) afterSession(); }
   else if (k === "o") R.forceOpen = !R.forceOpen;
+  else if (k === "w") {
+    const i = watch.indexOf(R.focus);
+    if (i >= 0) { watch.splice(i, 1); toast(R.focus + " dropped"); }
+    else { watch.unshift(R.focus); toast(R.focus + " watched", "good"); }
+    saveWatch();
+  }
   else if (k === "/") { e.preventDefault(); $("#symIn").focus(); return; }
   else if (k === "[") setQty(qty - 5);
   else if (k === "]") setQty(qty + 5);
@@ -1783,10 +2327,26 @@ addEventListener("keydown", e => {
   render();
 });
 
+/* ---------------- native shell bridge ---------------- */
+window.tapeMenu = id => {
+  const acts = {
+    new: openSetup,
+    mods: openSetup,
+    resume: () => { openSetup(); $("#bResume").click(); },
+    playpause: () => { if (R && !R.finished) { R.playing = !R.playing; render(); } },
+    flatten: () => { if (R) { R.flatten(); render(); } },
+    share: () => { if (R) copyText(R.card()); },
+    vwap: () => { PREFS.vwap = !PREFS.vwap; savePrefs(); render(); },
+    sound: () => { PREFS.sound = !PREFS.sound; savePrefs(); render(); },
+  };
+  if (acts[id]) acts[id]();
+};
+window.tapeUpdate = v => toast(`update ${v} available — download from releases`, "good");
+
 /* ---------------- clock ---------------- */
 function afterSession() {
   if (R.finished) showEnd();
-  else if (R.pendingPerks) showPerks();
+  else if (R.pendingPerks || PREFS.ap.recap) showPerks();
 }
 let carry = 0, lastT = 0, lastPaint = 0;
 function loop(now) {
@@ -1899,6 +2459,47 @@ function selfTest() {
   ok(vpm > 2e6 && vpm < 6e8, `megacap daily volume ${(vpm / 1e6).toFixed(0)}M shares is plausible`);
   const lsz = Math.max(...r5.ladder().filter(l => l.sz).map(l => l.sz));
   ok(lsz <= 20000, `ladder depth tops out at ${lsz.toLocaleString()} shares`);
+
+  const r6 = new Run(21, { days: "5" }, false);
+  r6.step(MIN_DAY + 5);
+  r6.submit("SPDY", "buy", 2); r6.step(20); r6.submit("SPDY", "sell", 2);
+  saveRun(r6);
+  const back = Run.restore(loadSave());
+  ok(back.seed === r6.seed && back.t === r6.t && Math.abs(back.equity() - r6.equity()) < 1e-6,
+     "a saved run restores to the same equity");
+  ok(back.sess.length === r6.sess.length && back.fills.length === r6.fills.length,
+     "restore keeps session recaps and fills");
+  clearSave();
+  ok(loadSave() === null, "discard clears the saved run");
+  ok(r6.card().split("\n").length === 3 && /^TAPE · seed 21/.test(r6.card()),
+     "score card is three lines with the seed");
+
+  R = r6;
+  enterReview(0);
+  ok(r6.reviewMode && r6.viewT() < r6.t, "review jumps the chart back");
+  enterReview(999);
+  ok(r6.viewT() <= r6.t, "review clamps to the live clock");
+  exitReview();
+  ok(!r6.reviewMode && r6.viewT() === Math.floor(r6.t), "exiting review returns to live");
+
+  const r7 = new Run(33, { days: "5" }, false);
+  r7.step(60);
+  const last7 = r7.quote("SPDY")[2];
+  ok(r7.submit("SPDY", "buy", 5, "market", 0, 0,
+     { stop: last7 * 1.01, tgt: last7 * 1.02 }) !== null, "a stop above the price is rejected");
+  ok(r7.submit("SPDY", "buy", 5, "market", 0, 0,
+     { stop: last7 * .99, tgt: last7 * 1.02 }) === null, "a bracket entry is accepted");
+  const brk = r7.orders.filter(o => o.status === "working");
+  ok(brk.length === 2 && brk.some(o => o.kind === "stop") && brk.some(o => o.kind === "limit"),
+     `a filled bracket rests a stop and a target (${brk.length} orders)`);
+  r7.cancelAll();
+  ok(r7.orders.every(o => o.status !== "working"), "cancel all clears the working orders");
+
+  const vw = PREFS.vwap;
+  window.tapeMenu("vwap");
+  ok(PREFS.vwap !== vw, "the native menu reaches the frontend");
+  window.tapeMenu("vwap");
+  ok(PREFS.vwap === vw, "menu toggles are reversible");
   return out;
 }
 if (location.search.indexOf("selftest") >= 0) {
