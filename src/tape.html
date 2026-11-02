@@ -2,506 +2,652 @@
 <html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Tape</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+Condensed:wght@400;500;600;700&display=swap">
 <style>
-:root{--ground:#06080B;--panel:#0D1116;--panel2:#11161D;--line:#1B2330;--line2:#2A3547;
---ink:#EDF2F7;--ink2:rgba(237,242,247,.62);--ink3:rgba(237,242,247,.40);
---amber:#FFB020;--amberd:rgba(255,176,32,.14);--up:#2FBF71;--down:#E8535A;
---sans:"IBM Plex Sans Condensed",system-ui,"Helvetica Neue",sans-serif;
---mono:"IBM Plex Mono",ui-monospace,Menlo,monospace}
+@font-face{font-family:"Plex Sans";src:url(fonts/IBMPlexSansCondensed-400.woff2) format("woff2");font-weight:400;font-display:swap}
+@font-face{font-family:"Plex Sans";src:url(fonts/IBMPlexSansCondensed-500.woff2) format("woff2");font-weight:500;font-display:swap}
+@font-face{font-family:"Plex Sans";src:url(fonts/IBMPlexSansCondensed-600.woff2) format("woff2");font-weight:600;font-display:swap}
+@font-face{font-family:"Plex Sans";src:url(fonts/IBMPlexSansCondensed-700.woff2) format("woff2");font-weight:700;font-display:swap}
+@font-face{font-family:"Plex Mono";src:url(fonts/IBMPlexMono-400.woff2) format("woff2");font-weight:400;font-display:swap}
+@font-face{font-family:"Plex Mono";src:url(fonts/IBMPlexMono-500.woff2) format("woff2");font-weight:500;font-display:swap}
+@font-face{font-family:"Plex Mono";src:url(fonts/IBMPlexMono-600.woff2) format("woff2");font-weight:600;font-display:swap}
+:root{
+--ground:#171719;--surface:#131217;--raised:#212023;--hover:#1d1c21;
+--border:#252528;--rule:#1d1c21;--control:#3a3a3e;
+--ink:#f4f4f5;--ink2:rgba(244,244,245,.8);
+--amber:#ffb020;--amberwash:rgba(255,176,32,.09);
+--up:#44a282;--down:#e5566f;--upwash:rgba(68,162,130,.15);--downwash:rgba(229,86,111,.15);
+--warn:#d9a441;
+--sans:"Plex Sans",system-ui,"Helvetica Neue",sans-serif;
+--mono:"Plex Mono",ui-monospace,Menlo,monospace;
+--shadow:0 18px 40px rgba(0,0,0,.45)}
 *{box-sizing:border-box}
 html,body{height:100%}
-body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--sans);
-font-size:14px;overflow:hidden;-webkit-font-smoothing:antialiased}
-button{font-family:var(--sans);cursor:pointer;border:1px solid var(--line2);background:var(--panel2);
-color:var(--ink);border-radius:2px;font-size:12px;padding:4px 9px}
-button:hover{border-color:var(--amber);color:var(--amber)}
-button:focus-visible{outline:2px solid var(--amber);outline-offset:1px}
-button.on{background:var(--amber);color:var(--ground);border-color:var(--amber)}
-button:disabled{opacity:.4;cursor:default}
-input{font-family:var(--mono);background:var(--ground);border:1px solid var(--line2);color:var(--ink);
-border-radius:2px;padding:4px 7px;font-size:12px;width:100%}
+body{margin:0;background:var(--ground);color:var(--ink);font:400 13px/1.4 var(--sans);font-variant-numeric:tabular-nums;
+overflow:hidden;-webkit-font-smoothing:antialiased}
+button{font:500 12px/1 var(--sans);color:var(--ink);background:transparent;cursor:pointer;
+border:1px solid var(--control);border-radius:999px;height:28px;padding:0 12px;
+transition:background-color .12s,border-color .12s,color .12s}
+button:hover{border-color:var(--ink2);background:var(--raised)}
+button:active{transform:translateY(1px)}
+button:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline:1px solid var(--amber);outline-offset:2px}
+button:disabled{opacity:.45;cursor:default}
+button.primary{background:var(--ink);color:#141416;border-color:var(--ink);font-weight:600}
+button.primary:hover{background:#fff;border-color:#fff}
+button.quiet{border-color:transparent}
+button.quiet:hover{border-color:var(--control)}
+input{font:400 13px/1 var(--mono);font-variant-numeric:tabular-nums;color:var(--ink);background:var(--ground);
+border:1px solid var(--control);border-radius:6px;height:30px;padding:0 9px;width:100%;min-width:0}
+input::placeholder{color:var(--ink2)}
 input:focus{outline:none;border-color:var(--amber)}
-.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
-.up{color:var(--up)}.down{color:var(--down)}.dim{color:var(--ink2)}.dim3{color:var(--ink3)}
-.amb{color:var(--amber)}
+.mono,.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.up{color:var(--up)}.down{color:var(--down)}.dim{color:var(--ink2)}.amb{color:var(--amber)}
+kbd{font:500 11px/1 var(--mono);border:1px solid var(--control);border-bottom-width:2px;border-radius:4px;
+padding:2px 5px;color:var(--ink);background:var(--raised);display:inline-block}
+svg.i{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;flex:none}
 
-#app{display:grid;grid-template-rows:38px 1fr 172px 22px;height:100vh}
-.topbar{display:flex;align-items:stretch;background:var(--panel2);border-bottom:1px solid var(--line)}
-.brand{display:flex;align-items:center;gap:7px;padding:0 13px;border-right:1px solid var(--line);
-font-weight:700;letter-spacing:.02em}
-.tauri .brand{padding-left:82px}
+#app{display:grid;grid-template-rows:48px auto 1fr 28px;height:100vh;min-width:0}
+.topbar{grid-row:1}.reviewbar{grid-row:2}.mid{grid-row:3}.statusbar{grid-row:4}
+.topbar{display:flex;align-items:stretch;min-width:0;border-bottom:1px solid var(--border)}
+.brand{display:flex;align-items:center;gap:9px;padding:0 16px 0 14px;font:700 15px/1 var(--sans);flex:none}
+.tauri .brand{padding-left:80px}
 .tauri .spacer{-webkit-app-region:drag}
-.brand i{width:7px;height:7px;background:var(--amber);border-radius:1px;box-shadow:0 0 9px var(--amber)}
-.ctrls{display:flex;align-items:center;gap:4px;padding:0 10px;border-right:1px solid var(--line)}
-.search{position:relative}
-.results{position:absolute;top:34px;left:8px;width:320px;background:var(--panel);
-border:1px solid var(--line2);border-radius:3px;z-index:60;display:none;
-box-shadow:0 20px 50px -18px #000;max-height:340px;overflow-y:auto}
+.mark{width:20px;height:20px;flex:none}
+.transport{display:flex;align-items:stretch;gap:2px;padding:0 10px;border-left:1px solid var(--border)}
+.transport .play{align-self:center;width:32px;height:32px;padding:0;display:grid;place-items:center;border-color:var(--ink2)}
+.transport .play svg{width:14px;height:14px;fill:currentColor;stroke:none}
+.transport .play.on{background:var(--ink);color:#141416;border-color:var(--ink)}
+.seg{display:flex;align-items:stretch;gap:14px}
+.seg b{display:flex;align-items:center;font:500 12px/1 var(--sans);color:var(--ink2);cursor:pointer;
+border-bottom:1px solid transparent;margin-bottom:-1px;white-space:nowrap;user-select:none}
+.seg b:hover{color:var(--ink)}
+.seg b.on{color:var(--ink);border-bottom-color:var(--amber)}
+.seg.num b{font-family:var(--mono)}
+.transport .seg{padding:0 8px 0 12px}
+.transport button.quiet{align-self:center}
+.search{position:relative;display:flex;align-items:center;padding:0 12px;border-left:1px solid var(--border)}
+.search input{width:200px;border-radius:999px;font-family:var(--sans);padding-left:12px}
+.results{position:absolute;top:44px;left:12px;width:340px;background:var(--surface);border:1px solid var(--control);
+border-radius:6px;z-index:60;display:none;box-shadow:var(--shadow);max-height:360px;overflow-y:auto;padding:4px 0}
 .results.show{display:block}
-.results .hit{display:grid;grid-template-columns:56px 1fr 74px;gap:9px;padding:6px 11px;
-cursor:pointer;align-items:baseline;border-bottom:1px solid rgba(27,35,48,.6)}
-.results .hit:last-child{border-bottom:0}
-.results .hit.on,.results .hit:hover{background:var(--amberd)}
-.results .hit .tk{font-family:var(--mono);font-size:12px;color:var(--amber);font-weight:600}
-.results .hit .nm{font-size:12.5px;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.results .hit .sc{font-size:10px;color:var(--ink3);font-family:var(--mono);text-align:right}
-.results .none{padding:10px 11px;color:var(--ink3);font-size:12px}
-.tm{padding:0 12px;display:flex;flex-direction:column;justify-content:center;
-border-left:1px solid var(--line);min-width:84px}
-.tm .k{font-size:9.5px;color:var(--ink3);font-family:var(--mono);line-height:1.15}
-.tm .v{font-size:13.5px;font-family:var(--mono);font-variant-numeric:tabular-nums;font-weight:500;line-height:1.3}
-.spacer{flex:1}
-.pill{font-family:var(--mono);font-size:10px;padding:1px 6px;border-radius:2px;border:1px solid currentColor}
+.results .hit{display:grid;grid-template-columns:58px 1fr 88px;gap:10px;padding:0 12px;height:30px;cursor:pointer;align-items:center}
+.results .hit.on,.results .hit:hover{background:var(--raised);box-shadow:inset 1px 0 0 var(--amber)}
+.results .hit .tk{font:600 13px/1 var(--mono)}
+.results .hit .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.results .hit .sc{font-size:12px;color:var(--ink2);text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.results .none{padding:8px 12px;color:var(--ink2)}
+.sess{display:flex;flex-direction:column;justify-content:center;gap:6px;padding:0 16px;border-left:1px solid var(--border);
+width:clamp(170px,16vw,260px);flex:none}
+.sess .row1{display:flex;justify-content:space-between;gap:10px;font-size:12px;color:var(--ink2);white-space:nowrap}
+.sess .row1 b{color:var(--ink);font-weight:600}
+.strip{position:relative;height:6px;background:var(--raised);border-radius:3px}
+.strip .fill{position:absolute;left:0;top:0;bottom:0;background:var(--amber);border-radius:3px}
+.strip .tick{position:absolute;top:-3px;width:1px;height:12px;background:var(--ink)}
+.strip .tick.e{background:var(--warn);width:2px}
+.spacer{flex:1;min-width:8px}
+.kpi{display:flex;flex-direction:column;justify-content:center;gap:3px;padding:0 16px;border-left:1px solid var(--border);
+white-space:nowrap;flex:none}
+.kpi .k{font-size:12px;color:var(--ink2);line-height:1}
+.kpi .v{font:500 16px/1.1 var(--mono);font-variant-numeric:tabular-nums}
+.kpi .v small{font-size:12px;color:var(--ink2);font-weight:400}
+.kpi.lead .v{font-size:20px;font-weight:600}
+.topbar .kpi:last-child{padding-right:20px}
+.col.r .ph,.col.r .ticket{padding-left:16px;padding-right:16px}
 
-.body{display:grid;grid-template-columns:238px 1fr 262px;min-height:0}
-.col{display:flex;flex-direction:column;min-width:0;min-height:0}
-.col.l{border-right:1px solid var(--line)}
-.col.r{border-left:1px solid var(--line)}
-.pane{display:flex;flex-direction:column;border-bottom:1px solid var(--line);min-height:0;overflow:hidden}
+.reviewbar{display:none;align-items:center;gap:16px;padding:0 16px;height:34px;border-bottom:1px solid var(--border);
+box-shadow:inset 0 -1px 0 var(--amber);font-size:13px}
+.reviewbar.show{display:flex}
+.reviewbar .tag{font-weight:600;color:var(--amber)}
+.reviewbar button{margin-left:auto}
+
+.mid{display:grid;grid-template-columns:52px 1fr;min-height:0;min-width:0}
+.rail{display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 0;border-right:1px solid var(--border)}
+.ri{width:52px;height:42px;border:0;border-radius:0;display:grid;place-items:center;color:var(--ink2);position:relative;background:none;padding:0}
+.ri:hover{color:var(--ink);background:none;border:0}
+.ri.on{color:var(--ink)}
+.ri.on::after{content:"";position:absolute;right:-1px;top:9px;bottom:9px;width:1px;background:var(--amber)}
+.ri .off{display:none}
+.ri.muted .on-ic{display:none}.ri.muted .off{display:block}
+.rail .gap{flex:1}
+.work{display:grid;grid-template-rows:1fr 192px;min-height:0;min-width:0}
+.body{display:grid;grid-template-columns:252px minmax(0,1fr) 284px;min-height:0;min-width:0}
+.col{display:flex;flex-direction:column;min-width:0;min-height:0;background:var(--surface)}
+.col.l{border-right:1px solid var(--border)}
+.col.r{border-left:1px solid var(--border)}
+.pane{display:flex;flex-direction:column;border-bottom:1px solid var(--border);min-height:0;overflow:hidden;background:var(--surface)}
 .pane:last-child{border-bottom:0}
-.ph{display:flex;align-items:center;gap:8px;height:24px;padding:0 10px;background:var(--panel2);
-border-bottom:1px solid var(--line);font-size:11.5px;font-weight:600;color:var(--ink2);flex:none}
-.ph .tabs{margin-left:auto;display:flex;gap:2px}
-.ph .tabs b{font-weight:500;font-size:10.5px;color:var(--ink3);padding:1px 6px;border-radius:2px;cursor:pointer}
-.ph .tabs b:hover{color:var(--ink)}
-.ph .tabs b.on{color:var(--ground);background:var(--amber)}
-.scroll{overflow-y:auto;min-height:0}
-.scroll::-webkit-scrollbar{width:7px}
-.scroll::-webkit-scrollbar-thumb{background:var(--line2);border-radius:4px}
+.ph{display:flex;align-items:stretch;gap:12px;height:34px;padding:0 12px;border-bottom:1px solid var(--border);flex:none;white-space:nowrap}
+.ph h2{margin:0;font:600 13px/1 var(--sans);display:flex;align-items:center;gap:8px}
+.ph h2 span{font-weight:400;color:var(--ink2);font-size:12px}
+.ph .seg{margin-left:auto;gap:12px}
+.ph .act{margin-left:auto;display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink2)}
+.scroll{overflow-y:auto;min-height:0;flex:1}
+.scroll::-webkit-scrollbar{width:8px}
+.scroll::-webkit-scrollbar-thumb{background:var(--raised);border-radius:4px}
 
-table{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:11.5px;font-variant-numeric:tabular-nums}
-th{font-weight:400;color:var(--ink3);text-align:right;padding:3px 8px;font-size:9.5px;
-border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--panel);z-index:2}
-th:first-child{text-align:left}
-td{padding:2.5px 8px;text-align:right;white-space:nowrap;border-bottom:1px solid rgba(27,35,48,.5)}
-td:first-child{text-align:left}
-tr[data-t]{cursor:pointer}
-tr[data-t]:hover td{background:rgba(255,176,32,.09)}
-tr.sel td{background:var(--amberd)}
-.flash-up{animation:fu .45s steps(1)}.flash-dn{animation:fd .45s steps(1)}
-@keyframes fu{0%,60%{background:rgba(47,191,113,.26)}100%{background:transparent}}
-@keyframes fd{0%,60%{background:rgba(232,83,90,.26)}100%{background:transparent}}
+table{width:100%;border-collapse:collapse;font:400 13px/1 var(--mono);font-variant-numeric:tabular-nums}
+th{font:400 12px/1 var(--sans);color:var(--ink2);text-align:right;padding:0 10px;height:28px;position:sticky;top:0;
+background:var(--surface);z-index:2;white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+td{padding:0 10px;height:26px;text-align:right;white-space:nowrap;border-top:1px solid var(--rule)}
+td.l{text-align:left;font-family:var(--sans)}
+tr[data-t],tr[data-cancel]{cursor:pointer}
+tr[data-t]:hover td,tr[data-cancel]:hover td{background:var(--hover)}
+tr.sel td{background:var(--raised)}
+tr.sel td:first-child{box-shadow:inset 1px 0 0 var(--amber)}
+td.tk{font-weight:600}
+td.empty{text-align:left;font-family:var(--sans);color:var(--ink2);height:40px;border-top:0;white-space:normal}
+.flash-up{animation:fu .5s steps(1)}.flash-dn{animation:fd .5s steps(1)}
+@keyframes fu{0%,60%{background:var(--upwash)}100%{background:transparent}}
+@keyframes fd{0%,60%{background:var(--downwash)}100%{background:transparent}}
 
-.charthead{display:flex;align-items:baseline;gap:11px;padding:7px 12px 6px;
-border-bottom:1px solid var(--line);flex:none}
-.charthead .sym{font-size:19px;font-weight:700}
-.charthead .last{font-family:var(--mono);font-size:19px;font-weight:600;font-variant-numeric:tabular-nums}
+.chartpane{flex:1;display:flex;flex-direction:column;min-height:0}
+.charthead{display:flex;align-items:stretch;gap:16px;padding:0 14px;border-bottom:1px solid var(--border);flex:none;height:58px}
+.ch-id{display:flex;flex-direction:column;justify-content:center;gap:5px;min-width:0;flex:1}
+.ch-l1{display:flex;align-items:baseline;gap:12px;min-width:0;white-space:nowrap}
+.ch-l1 h1{margin:0;font:600 20px/1 var(--mono);letter-spacing:-.01em}
+.ch-l1 .last{font:600 20px/1 var(--mono);font-variant-numeric:tabular-nums}
+.ch-l1 .chg{font:500 13px/1 var(--mono)}
+.ch-l1 .nm{font-size:13px;color:var(--ink2);overflow:hidden;text-overflow:ellipsis}
+.ch-l2{font-size:13px;color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.2}
+.ch-l2 b{color:var(--ink);font-weight:500;font-family:var(--mono)}
+.pill{display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:999px;font:500 12px/1 var(--sans);flex:none;align-self:center}
+.pill.bad{background:#2c1a20;color:var(--down)}
+.pill.good{background:#1b2828;color:#5fc39c}
+.pill.warn{background:#2a2416;color:var(--warn)}
+.pill.neutral{background:var(--raised);color:var(--ink)}
+.ch-tools{display:flex;align-items:stretch;gap:16px;margin-left:auto;flex:none}
+.ch-tools .zoom{display:flex;align-items:center;font-size:12px;color:var(--ink2)}
 .chartbox{position:relative;flex:1;min-height:0}
 canvas{display:block;width:100%;height:100%}
+#chart.drag{cursor:ns-resize}
+.chart-hint{position:absolute;left:12px;bottom:22px;font-size:12px;color:var(--ink2);pointer-events:none}
 
-.ladder{font-family:var(--mono);font-size:11.5px;font-variant-numeric:tabular-nums}
-.lrow{display:grid;grid-template-columns:1fr 66px 1fr;align-items:center;height:16px;position:relative;
-border-bottom:1px solid rgba(27,35,48,.45);cursor:pointer}
-.lrow:hover{background:rgba(255,176,32,.07)}
+.ladder{font:400 12px/1 var(--mono);font-variant-numeric:tabular-nums}
+.lrow{display:grid;grid-template-columns:1fr 70px 1fr;align-items:center;height:21px;position:relative;cursor:pointer}
+.lrow:hover{background:var(--hover)}
 .lrow .px{text-align:center;z-index:2;font-weight:500}
-.lrow .bq,.lrow .aq{z-index:2;padding:0 7px;font-size:10.5px}
-.lrow .bq{text-align:left;color:var(--up)}.lrow .aq{text-align:right;color:var(--down)}
-.lrow .bar{position:absolute;top:1px;bottom:1px;z-index:1}
-.lrow .bar.b{left:0;background:rgba(47,191,113,.17)}
-.lrow .bar.a{right:0;background:rgba(232,83,90,.17)}
-.lrow.mid{background:var(--panel2);height:19px}.lrow.mid .px{color:var(--amber);font-weight:600}
-.halted{opacity:.32;pointer-events:none}
+.lrow .bq,.lrow .aq{z-index:2;padding:0 16px;white-space:nowrap;position:relative}
+.lrow .px{position:relative}
+.lrow .bq{text-align:left}.lrow .aq{text-align:right}
+.lrow .bar{position:absolute;top:2px;bottom:2px;z-index:1}
+.lrow .bar.b{left:0;background:var(--upwash)}
+.lrow .bar.a{right:0;background:var(--downwash)}
+.lrow .me{color:var(--amber);font-weight:600}
+.lrow.mine{box-shadow:inset 1px 0 0 var(--amber)}
+.lrow.mid{height:26px;background:var(--raised);cursor:default;font-family:var(--sans)}
+.lrow.mid .px{font:600 13px/1 var(--mono)}
+.lrow.mid .bq,.lrow.mid .aq{color:var(--ink2);font-size:12px}
+.halted{opacity:.4;pointer-events:none}
+.blindnote{padding:18px 14px;color:var(--ink2);line-height:1.5}
 
-.ticket{padding:9px 10px;display:flex;flex-direction:column;gap:6px;flex:none}
-.bs{display:grid;grid-template-columns:1fr 1fr;gap:6px}
-.bs button{font-family:var(--mono);font-size:12px;font-weight:600;padding:8px 4px}
-.bs .b{color:var(--up);border-color:rgba(47,191,113,.5);background:rgba(47,191,113,.1)}
-.bs .s{color:var(--down);border-color:rgba(232,83,90,.5);background:rgba(232,83,90,.1)}
-.qty{display:grid;grid-template-columns:auto 1fr auto auto;gap:5px;align-items:center}
-.qty span{font-family:var(--mono);font-size:10px;color:var(--ink3)}
+.ticket{padding:12px;display:flex;flex-direction:column;gap:8px;flex:none}
+.bs{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.bs button{height:40px;font:600 14px/1 var(--sans);display:flex;align-items:center;justify-content:center;gap:8px;border-radius:6px}
+.bs .b{color:var(--up);border-color:rgba(68,162,130,.6)}
+.bs .b:hover{background:var(--upwash);border-color:var(--up)}
+.bs .s{color:var(--down);border-color:rgba(229,86,111,.6)}
+.bs .s:hover{background:var(--downwash);border-color:var(--down)}
+.tk-row{display:grid;grid-template-columns:44px 1fr auto auto;gap:6px;align-items:center}
+.tk-row label,.tk2 label{font-size:12px;color:var(--ink2)}
+.tk-row button{width:30px;padding:0}
+.presets{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.presets button{height:26px;padding:0;font:500 12px/1 var(--mono)}
+.notional{display:flex;justify-content:space-between;gap:8px;font:400 12px/1.3 var(--mono);color:var(--ink2);white-space:nowrap}
+.notional b{font-weight:500;color:var(--ink)}
+.tk2{display:grid;grid-template-columns:44px 1fr 30px 1fr;gap:6px;align-items:center}
+.tk2 input{height:28px}
+.tk3{display:grid;grid-template-columns:44px 64px 1fr;gap:6px;align-items:center}
+.tk3 button{height:28px}
+#bFlat{height:32px;width:100%;border-radius:6px}
 
-.tape{font-family:var(--mono);font-size:11px;font-variant-numeric:tabular-nums}
-.tape .r{display:grid;grid-template-columns:50px 1fr 54px 26px;gap:6px;padding:1.5px 9px;
-border-bottom:1px solid rgba(27,35,48,.4)}
+.tape{font:400 12px/1 var(--mono);font-variant-numeric:tabular-nums}
+.ladder.scroll,.tape.scroll{overflow:hidden}
+.tape .r{display:grid;grid-template-columns:52px 1fr 64px;gap:8px;padding:0 16px;height:21px;align-items:center}
 .tape .r span:nth-child(n+2){text-align:right}
-.tape .r span:last-child{color:var(--ink3);font-size:9.5px}
+.tape .r.lot{font-weight:600}
 
-.feed{font-size:12px}
-.feed .n{display:grid;grid-template-columns:44px 46px 1fr auto;gap:8px;padding:4px 10px;
-border-bottom:1px solid rgba(27,35,48,.55);cursor:pointer;align-items:baseline}
-.feed .n:hover{background:rgba(255,166,32,.07)}
-.feed .n .t{font-family:var(--mono);font-size:10px;color:var(--ink3)}
-.feed .n .s{font-family:var(--mono);font-size:11px;color:var(--amber);font-weight:500}
-.feed .n .h{line-height:1.35}
-.feed .n .m{font-family:var(--mono);font-size:11px;font-variant-numeric:tabular-nums}
-.logbox{font-family:var(--mono);font-size:11px;line-height:1.7;padding:5px 10px;color:var(--ink2)}
-.logbox b{color:var(--amber);font-weight:500}
+.feed .n{display:grid;grid-template-columns:44px 52px 1fr auto;gap:10px;padding:0 14px;height:28px;align-items:center;
+border-top:1px solid var(--rule);cursor:pointer}
+.feed .n:first-child{border-top:0}
+.feed .n:hover{background:var(--hover)}
+.feed .n .t{font:400 12px/1 var(--mono);color:var(--ink2)}
+.feed .n .s{font:600 12px/1 var(--mono)}
+.feed .n .h{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.feed .n .m{font:400 12px/1 var(--mono)}
+.feed .n.held .s{color:var(--amber)}
+.feed .note{padding:12px 14px;color:var(--ink2)}
+.logbox{font:400 12px/1.75 var(--mono);padding:6px 14px}
+.logbox b{font-weight:500;color:var(--ink2);margin-right:6px}
 
-.bottom{display:grid;grid-template-columns:1fr 1fr 340px;border-top:1px solid var(--line);min-height:0}
-.statusbar{display:flex;align-items:center;background:var(--panel2);border-top:1px solid var(--line);
-font-family:var(--mono);font-size:10.5px;color:var(--ink2)}
-.statusbar div{padding:0 11px;border-right:1px solid var(--line);white-space:nowrap}
-.statusbar div:last-child{border:0;margin-left:auto;color:var(--ink3)}
-.perkchips{display:flex;gap:4px;align-items:center;padding:0 10px;border-left:1px solid var(--line)}
-.chip{font-family:var(--mono);font-size:9.5px;color:var(--amber);border:1px solid var(--amberd);
-background:var(--amberd);border-radius:2px;padding:1px 5px}
+.bottom{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr) minmax(300px,.9fr);border-top:1px solid var(--border);min-height:0}
+.bottom>.pane{border-bottom:0}
+.bottom>.pane+.pane{border-left:1px solid var(--border)}
+.bottom tr.tot td{border-top:1px solid var(--control);font-weight:500}
+.runhead{display:flex;align-items:center;gap:14px;margin-left:auto;font-size:12px;color:var(--ink2)}
+.runhead b{font:500 12px/1 var(--mono);color:var(--ink)}
+.eqbox{position:relative;flex:1;min-height:0;cursor:pointer}
 
-.modal{position:fixed;inset:0;background:rgba(6,8,11,.88);display:none;align-items:center;
-justify-content:center;z-index:50;backdrop-filter:blur(3px);padding:20px}
+.statusbar{display:flex;align-items:center;border-top:1px solid var(--border);font-size:12px;color:var(--ink2);min-width:0;overflow:hidden}
+.statusbar>div:first-child{padding-left:16px}
+.statusbar>div{padding:0 12px;white-space:nowrap;border-right:1px solid var(--border);line-height:28px}
+.statusbar>div:last-child{border-right:0;padding-right:16px}
+.statusbar b{font:500 12px/1 var(--mono);color:var(--ink)}
+.statusbar .grow{flex:1;border-right:0;overflow:hidden;text-overflow:ellipsis}
+.statusbar .perks{color:var(--amber)}
+#vSeed{cursor:pointer}
+#vSeed:hover{text-decoration:underline}
+
+.modal{position:fixed;inset:0;background:rgba(12,12,14,.84);display:none;align-items:center;justify-content:center;z-index:50;padding:24px}
 .modal.show{display:flex}
-.card{background:var(--panel);border:1px solid var(--line2);border-radius:4px;padding:26px 28px;
-width:540px;max-width:94vw;max-height:92vh;overflow-y:auto;display:flex;flex-direction:column;gap:14px;
-box-shadow:0 40px 90px -30px #000}
-.card h2{margin:0;font-size:26px;letter-spacing:-.01em}
-.card .big{font-family:var(--mono);font-size:44px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1}
-.card .sub{color:var(--ink2);font-size:13.5px;line-height:1.5}
-.statgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);
-border:1px solid var(--line);border-radius:3px;overflow:hidden}
-.statgrid div{background:var(--panel2);padding:9px 11px}
-.statgrid .k{font-family:var(--mono);font-size:9.5px;color:var(--ink3)}
-.statgrid .v{font-family:var(--mono);font-size:15px;font-variant-numeric:tabular-nums}
-.lb{font-family:var(--mono);font-size:11.5px;max-height:150px;overflow-y:auto}
-.lb .r{display:grid;grid-template-columns:22px 1fr 62px 70px;gap:8px;padding:3px 2px;
-border-bottom:1px solid var(--line)}
-.lb .r span:nth-child(n+3){text-align:right}
-.lb .r.me{color:var(--amber)}
-.row{display:flex;gap:8px;align-items:center}
-.row button{padding:8px 14px;font-size:13px}
-kbd{font-family:var(--mono);font-size:10px;background:var(--panel2);border:1px solid var(--line2);
-border-bottom-width:2px;border-radius:3px;padding:1px 5px;color:var(--ink2)}
+.card{background:var(--surface);border:1px solid var(--control);border-radius:6px;padding:28px;width:560px;max-width:96vw;
+max-height:94vh;overflow-y:auto;display:flex;flex-direction:column;gap:18px;box-shadow:var(--shadow);animation:pop .16s ease-out}
+@keyframes pop{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.card h2{margin:0;font:600 26px/1.1 var(--sans);letter-spacing:-.01em}
+.card .sub{margin:0;color:var(--ink2);font-size:14px;line-height:1.5}
+.card .sub b{color:var(--ink);font-weight:500;font-family:var(--mono)}
+.card h3{margin:0;font:600 14px/1.2 var(--sans)}
+.big{font:600 40px/1 var(--mono);font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.stats{display:grid;grid-template-columns:repeat(var(--n,4),1fr);border:1px solid var(--border);border-radius:6px}
+.stats>div{padding:12px 14px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.stats>div+div{border-left:1px solid var(--border)}
+.stats .k{font-size:12px;color:var(--ink2)}
+.stats .v{font:500 16px/1.15 var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+.row{display:flex;gap:10px;align-items:center}
+.row button{height:38px;padding:0 18px;font-size:13px}
+.row .grow{flex:1}
 
-.setup{width:860px}
-.setup .lede{color:var(--ink2);font-size:13.5px;max-width:64ch;line-height:1.55}
-.mods{display:grid;grid-template-columns:repeat(2,1fr);gap:1px;background:var(--line);
-border:1px solid var(--line);border-radius:3px;overflow:hidden;max-height:42vh;overflow-y:auto}
-.mod{background:var(--panel2);padding:10px 12px 12px;display:flex;flex-direction:column;gap:6px}
-.mod .lab{font-size:11px;color:var(--ink3);font-family:var(--mono)}
-.opts{display:flex;gap:4px;flex-wrap:wrap}
-.opt{border:1px solid var(--line2);background:var(--ground);border-radius:2px;padding:4px 9px;
-font-size:12px;cursor:pointer;display:flex;align-items:center;gap:6px;color:var(--ink2)}
-.opt:hover{border-color:var(--amber);color:var(--ink)}
-.opt.on{background:var(--amber);color:var(--ground);border-color:var(--amber);font-weight:600}
-.opt em{font-style:normal;font-family:var(--mono);font-size:9.5px;opacity:.72}
-.mod .hint{font-size:11.5px;color:var(--ink2);min-height:16px;line-height:1.35}
-.multbar{display:flex;align-items:baseline;gap:12px;padding:12px 15px;border:1px solid var(--line2);
-border-left:2px solid var(--amber);border-radius:0 3px 3px 0;background:var(--panel2)}
-.multbar .big2{font-family:var(--mono);font-size:32px;font-weight:600;color:var(--amber);line-height:1}
-.multbar .txt2{font-size:12.5px;color:var(--ink2);line-height:1.4}
+.setup{width:1000px;padding:0;gap:0;flex-direction:row}
+.setup .main{flex:1;padding:28px;display:flex;flex-direction:column;gap:16px;min-width:0}
+.setup .side{width:330px;flex:none;padding:28px;border-left:1px solid var(--border);display:flex;flex-direction:column;gap:16px;background:var(--ground)}
+.mods{display:flex;flex-direction:column}
+.mod{display:grid;grid-template-columns:150px 1fr;gap:4px 18px;padding:11px 0;border-top:1px solid var(--rule);align-items:center}
+.mod:first-child{border-top:0;padding-top:0}
+.mod .lab{font-weight:600;font-size:13px}
+.mod .seg{flex-wrap:wrap;gap:4px 16px;height:auto}
+.mod .seg b{height:26px;font-size:13px;gap:6px}
+.mod .seg b em{font:400 12px/1 var(--mono);font-style:normal;color:var(--ink2)}
+.mod .seg b.on em{color:var(--amber)}
+.mod .hint{grid-column:2;font-size:12px;color:var(--ink2);min-height:16px}
+.mult{display:flex;flex-direction:column;gap:8px}
+.mult .big{color:var(--ink)}
+.mult p{margin:0;font-size:13px;line-height:1.5;color:var(--ink2)}
+.mult p b{color:var(--ink);font-weight:500}
+.howto{margin:0;padding:0;list-style:none;display:grid;grid-template-columns:1fr 1fr;gap:10px 22px}
+.howto li{font-size:13px;line-height:1.5;color:var(--ink2)}
+.howto b{color:var(--ink);font-weight:600}
+.resume{display:flex;flex-direction:column;gap:10px;padding:14px;border:1px solid var(--control);border-radius:6px;box-shadow:inset 1px 0 0 var(--amber)}
+.resume .txt{font-size:13px;line-height:1.5;color:var(--ink2)}
+.resume .txt b{color:var(--ink);font-family:var(--mono);font-weight:500}
+.resume .row button{height:32px;flex:1}
+.side .fill{flex:1}
+.example{margin:0;font-size:13px;line-height:1.55;color:var(--ink2)}
+.example b{color:var(--ink);font-weight:500;font-family:var(--mono)}
+.kv{display:flex;flex-direction:column}
+.kv div{display:flex;justify-content:space-between;gap:12px;height:30px;align-items:center;border-top:1px solid var(--border);font-size:13px}
+.kv div span:first-child{color:var(--ink2)}
+.kv div span:last-child{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.side .seedrow{display:flex;flex-direction:column;gap:6px}
+.side .seedrow label{font-size:12px;color:var(--ink2)}
+.side button.primary{height:42px;font-size:14px;width:100%}
+.daily{display:flex;flex-direction:column;gap:6px}
+.daily button{height:36px;width:100%}
+.daily span{font-size:12px;color:var(--ink2);line-height:1.4}
 
 .perks{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-.perk{background:var(--panel2);border:1px solid var(--line2);border-radius:3px;padding:15px 15px 17px;
-cursor:pointer;display:flex;flex-direction:column;gap:7px;text-align:left}
-.perk:hover{border-color:var(--amber);background:rgba(255,176,32,.07)}
-.perk .pn{font-size:15px;font-weight:700;color:var(--amber)}
-.perk .pd{font-size:12.5px;color:var(--ink2);line-height:1.45}
-.boot{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
-background:var(--ground);z-index:80;font-family:var(--mono);color:var(--ink3);font-size:13px}
-@media (max-width:1560px){
-  .tm{padding:0 9px;min-width:70px}
-  .tm .k{font-size:9px}
-  .tm .v{font-size:12.5px}
-  .ctrls{padding:0 7px;gap:3px}
-  .topbar button{padding:4px 7px;font-size:11.5px}
-}
-@media (max-width:1400px){
-  .perkchips{display:none}
-  #symIn{width:132px!important}
-  .tm.opt2{display:none}
-}
-@media (max-width:1240px){
-  .tm{padding:0 7px;min-width:60px}
-  .tm.opt1{display:none}
-  .bottom{grid-template-columns:1fr 1fr 250px}
-  .body{grid-template-columns:210px 1fr 236px}
-}
-.toosmall{position:fixed;inset:0;z-index:99;background:var(--ground);display:none;
-align-items:center;justify-content:center;flex-direction:column;gap:12px;text-align:center;padding:30px}
-.toosmall b{font-size:24px;font-weight:700}
+.perk{height:auto;border-radius:6px;padding:14px;display:flex;flex-direction:column;align-items:flex-start;gap:8px;
+text-align:left;background:var(--ground);border:1px solid var(--control)}
+.perk:hover{border-color:var(--amber);background:var(--ground)}
+.perk .pn{font:600 14px/1.2 var(--sans)}
+.perk .pd{font:400 13px/1.45 var(--sans);color:var(--ink2)}
+.perk kbd{margin-top:auto}
+.sessbox{height:96px;position:relative}
+.recapline{font-size:13px;color:var(--ink2);line-height:1.5;margin:0}
+.recapline b{color:var(--ink);font-family:var(--mono);font-weight:500}
+
+.lb{display:flex;flex-direction:column}
+.lb .r{display:grid;grid-template-columns:28px 1fr 64px 80px;gap:10px;height:30px;align-items:center;padding:0 8px;
+font:400 13px/1 var(--mono);border-top:1px solid var(--rule);cursor:pointer;border-radius:0}
+.lb .r:hover{background:var(--hover)}
+.lb .r span:nth-child(2){font-family:var(--sans);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lb .r span:nth-child(n+3){text-align:right}
+.lb .r.me{box-shadow:inset 1px 0 0 var(--amber);background:var(--raised)}
+.sharebox{font:400 13px/1.7 Menlo,ui-monospace,var(--mono);background:var(--ground);border:1px solid var(--border);border-radius:6px;padding:12px 14px;
+white-space:pre-wrap;word-break:break-word}
+
+.records{width:980px}
+.records .tablewrap{max-height:52vh;overflow-y:auto;border:1px solid var(--border);border-radius:6px}
+.records table td{height:32px}
+.records tbody tr{cursor:pointer}
+.records tbody tr:hover td{background:var(--hover)}
+.records td.mods{font-family:var(--sans);max-width:280px;overflow:hidden;text-overflow:ellipsis;vertical-align:middle;line-height:32px}
+.help{width:760px}
+.keys{display:grid;grid-template-columns:1fr 1fr;gap:0 32px}
+.keys div{display:flex;justify-content:space-between;align-items:center;gap:12px;height:32px;border-top:1px solid var(--rule);font-size:13px}
+.keys div span:last-child{display:flex;gap:4px}
+
+.pop{position:fixed;left:60px;bottom:36px;width:300px;background:var(--surface);border:1px solid var(--control);border-radius:6px;
+box-shadow:var(--shadow);z-index:65;padding:16px;display:none;flex-direction:column;gap:4px}
+.pop.show{display:flex}
+.pop h3{margin:0 0 6px;font:600 13px/1.2 var(--sans)}
+.pop p{margin:0 0 8px;font-size:12px;color:var(--ink2);line-height:1.45}
+.sw{display:flex;align-items:center;justify-content:space-between;gap:12px;height:34px;cursor:pointer;font-size:13px;user-select:none}
+.sw i{width:30px;height:18px;border-radius:9px;background:var(--control);position:relative;flex:none;transition:background-color .15s}
+.sw i::after{content:"";position:absolute;left:2px;top:2px;width:14px;height:14px;border-radius:50%;background:var(--ink2);transition:transform .15s}
+.sw.on i{background:var(--ink)}
+.sw.on i::after{transform:translateX(12px);background:#141416}
+.pop hr{border:0;border-top:1px solid var(--border);margin:8px 0}
+
+.boot{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:var(--ground);z-index:80;color:var(--ink2);font-size:14px}
+.toasts{position:fixed;top:58px;left:50%;transform:translateX(-50%);z-index:70;display:flex;flex-direction:column;gap:6px;align-items:center;pointer-events:none}
+.toast{font:500 13px/1.3 var(--sans);padding:9px 14px;border-radius:6px;background:var(--raised);border:1px solid var(--control);
+box-shadow:var(--shadow);animation:tin .16s ease-out;max-width:60vw}
+.toast.bad{box-shadow:var(--shadow),inset 2px 0 0 var(--down)}
+.toast.good{box-shadow:var(--shadow),inset 2px 0 0 var(--up)}
+@keyframes tin{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+.toosmall{position:fixed;inset:0;z-index:99;background:var(--ground);display:none;align-items:center;justify-content:center;
+flex-direction:column;gap:12px;text-align:center;padding:30px}
+.toosmall h1{font-size:24px;font-weight:700;margin:0}
 .toosmall span{color:var(--ink2);font-size:14px;max-width:40ch;line-height:1.6}
+
+@media (max-width:1500px){
+  .kpi{padding:0 12px}
+  .search input{width:170px}
+}
+@media (max-width:1360px){
+  .body{grid-template-columns:224px minmax(0,1fr) 268px}
+  .kpi.opt{display:none}
+  .ch-l1 .nm{display:none}
+  #scan th:nth-child(4),#scan td:nth-child(4){display:none}
+  .statusbar .opt{display:none}
+}
+@media (max-width:1260px){
+  .search input{width:140px}
+  .sess{width:150px}
+  .bottom{grid-template-columns:minmax(0,1fr) minmax(0,1fr) 270px}
+}
 @media (max-width:1080px),(max-height:560px){
   #app{display:none}
   .toosmall{display:flex}
 }
-.howto{display:grid;grid-template-columns:repeat(2,1fr);gap:1px;background:var(--line);
-border:1px solid var(--line);border-radius:3px;overflow:hidden;flex-shrink:0}
-.howto div{background:var(--panel2);padding:9px 12px;font-size:12.5px;color:var(--ink2);line-height:1.45}
-.howto b{color:var(--amber);font-weight:600}
-@media (prefers-reduced-motion:reduce){*{animation:none!important}}
-
-.toasts{position:fixed;top:46px;left:50%;transform:translateX(-50%);z-index:70;display:flex;
-flex-direction:column;gap:5px;align-items:center;pointer-events:none}
-.toast{font-family:var(--mono);font-size:11.5px;padding:6px 13px;border-radius:3px;
-background:var(--panel);border:1px solid var(--line2);border-left:2px solid var(--amber);
-color:var(--ink);box-shadow:0 14px 34px -12px #000;animation:tin .16s ease-out;max-width:60vw}
-.toast.bad{border-left-color:var(--down)}
-.toast.good{border-left-color:var(--up)}
-@keyframes tin{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
-
-.tfs{display:flex;gap:2px}
-.tfs b{font-family:var(--mono);font-size:10px;color:var(--ink3);padding:1px 5px;
-border-radius:2px;cursor:pointer;font-weight:500}
-.tfs b:hover{color:var(--ink)}
-.tfs b.on{color:var(--ground);background:var(--amber)}
-
-.presets{display:grid;grid-template-columns:repeat(4,1fr);gap:4px}
-.presets button{padding:3px 0;font-family:var(--mono);font-size:10.5px}
-.tkt2{display:grid;grid-template-columns:34px 1fr 34px 1fr;gap:5px;align-items:center}
-.tkt2 span{font-family:var(--mono);font-size:10px;color:var(--ink3)}
-.tkt2 input{padding:3px 6px;font-size:11px}
-.notional{font-family:var(--mono);font-size:10px;color:var(--ink3);display:flex;
-justify-content:space-between;gap:8px}
-.notional b{color:var(--ink2);font-weight:500}
-
-.rb{border:0;background:none;padding:0 3px;color:var(--ink3);font-family:var(--mono);
-font-size:11px;line-height:1;border-radius:2px}
-.rb:hover{color:var(--amber);border:0;background:rgba(255,176,32,.12)}
-td.act{width:52px;text-align:right;padding:1px 5px 1px 0}
-.hdot{display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--down);
-margin-right:4px;vertical-align:middle}
-
-.tape .r.me{background:rgba(255,176,32,.13)}
-.tape .r.me span:first-child{color:var(--amber)}
-
-.tg{display:flex;align-items:center;gap:6px}
-.tg b{font-weight:400;cursor:pointer;color:var(--ink3);border-bottom:1px solid transparent}
-.tg b:hover{color:var(--ink2)}
-.tg b.on{color:var(--amber);border-bottom-color:var(--amber)}
-#vSeed{cursor:pointer}
-#vSeed:hover{color:var(--amber)}
-
-.reviewbar{display:none;align-items:center;gap:14px;padding:0 13px;height:26px;
-background:var(--amberd);border-bottom:1px solid rgba(255,176,32,.4);font-family:var(--mono);
-font-size:11px;color:var(--amber)}
-.reviewbar.show{display:flex}
-#app.reviewing{grid-template-rows:38px 26px 1fr 172px 22px}
-
-.lb .r{cursor:pointer;border-radius:2px}
-.lb .r:hover{background:var(--amberd)}
-.resume{display:flex;align-items:center;gap:13px;padding:11px 14px;border:1px solid var(--line2);
-border-left:2px solid var(--amber);border-radius:0 3px 3px 0;background:var(--panel2);font-size:12.5px}
-.resume .txt{flex:1;color:var(--ink2);line-height:1.45}
-.resume .txt b{color:var(--ink);font-family:var(--mono);font-weight:500}
-.sharebox{font-family:var(--mono);font-size:12px;color:var(--ink2);background:var(--ground);
-border:1px solid var(--line);border-radius:3px;padding:9px 11px;line-height:1.7;word-break:break-word}
-@media (max-width:1400px){.statusbar .hint{display:none}}
+@media (max-height:860px){
+  .work{grid-template-rows:1fr 172px}
+  .ticket{gap:6px;padding:10px 12px}
+  .bs button{height:36px}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style></head>
 <body>
-<div class="boot" id="boot">building market…</div>
-<div class="toosmall">
-  <b>Tape needs a bigger window</b>
-  <span>It is a nine-panel trading terminal, so it wants at least 1080 by 560.
-  Open it on a laptop or desktop, or widen this window.</span>
-</div>
-<div class="toasts" id="toasts"></div>
+<div class="boot" id="boot">Building the market</div>
+<div class="toasts" id="toasts" role="status" aria-live="polite"></div>
 <div id="app">
-  <div class="topbar">
-    <div class="brand"><i></i>TAPE</div>
-    <div class="ctrls">
-      <button id="bPlay" title="space">▶</button>
-      <button data-speed="1">1×</button><button data-speed="4">4×</button>
-      <button data-speed="15" class="on">15×</button><button data-speed="60">60×</button>
-      <button data-speed="390">day</button>
-      <button id="bStep" title="n">step</button>
-      <button id="bOpen" title="o">force open</button>
+  <header class="topbar">
+    <div class="brand"><svg class="mark" viewBox="0 0 20 20" aria-hidden="true"><rect x="1" y="4" width="18" height="12" rx="2" fill="#ffb020"/><path d="M4 12.5l3-3 2.5 2 3.5-4 3 2.5" fill="none" stroke="#141416" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Tape</span></div>
+    <div class="transport">
+      <button class="play" id="bPlay" title="Play or pause (space)" aria-label="Play"></button>
+      <div class="seg num" id="speeds" role="group" aria-label="Clock speed">
+        <b data-speed="1">1×</b><b data-speed="4">4×</b><b data-speed="15" class="on">15×</b><b data-speed="60">60×</b><b data-speed="390">Day</b>
+      </div>
+      <button class="quiet" id="bStep" title="Advance one minute (n)">Step</button>
     </div>
-    <div class="ctrls search">
-      <input id="symIn" placeholder="search 6,200 symbols  /" style="width:186px" autocomplete="off">
+    <div class="search">
+      <input id="symIn" placeholder="Search 6,200 symbols" autocomplete="off" spellcheck="false" aria-label="Search symbols">
       <div class="results" id="symRes"></div>
     </div>
-    <div class="perkchips" id="perkChips"></div>
     <div class="spacer"></div>
-    <div class="tm"><span class="k">session</span><span class="v" id="vDay">1 / 20</span></div>
-    <div class="tm"><span class="k">clock</span><span class="v" id="vClock">09:30</span></div>
-    <div class="tm opt1"><span class="k">market</span><span class="v" id="vOpen"></span></div>
-    <div class="tm"><span class="k">equity</span><span class="v" id="vEquity">10,000</span></div>
-    <div class="tm"><span class="k">day P&amp;L</span><span class="v" id="vDayPl">0.00</span></div>
-    <div class="tm opt2"><span class="k">buying power</span><span class="v" id="vBp">10,000</span></div>
-    <div class="tm opt1"><span class="k">day trades</span><span class="v" id="vPdt">0 / 3</span></div>
-    <div class="tm"><span class="k">score</span><span class="v" id="vScore">0</span></div>
-    <div class="tm"><span class="k">best</span><span class="v" id="vBest">—</span></div>
-  </div>
+    <div class="sess" title="Your fills today are the white ticks; earnings on what you hold are the yellow ones">
+      <div class="row1"><span>Session <b id="vDay">1 of 20</b></span><span id="sessLeft">6h 30m left</span></div>
+      <div class="strip" id="sessStrip"></div>
+    </div>
+    <div class="kpi"><span class="k" id="vOpen">Open</span><span class="v" id="vClock">09:30</span></div>
+    <div class="kpi lead"><span class="k">Equity</span><span class="v" id="vEquity">10,000.00</span></div>
+    <div class="kpi"><span class="k">Day P&amp;L</span><span class="v" id="vDayPl">0.00</span></div>
+    <div class="kpi"><span class="k">Score</span><span class="v" id="vScore">0</span></div>
+  </header>
 
   <div class="reviewbar" id="reviewBar">
-    <span>REVIEW</span>
-    <span id="reviewTxt" class="dim">click the equity curve to jump the chart to that session</span>
-    <button id="bReviewOut" style="margin-left:auto;padding:2px 9px">exit <kbd>esc</kbd></button>
+    <span class="tag">Reviewing</span>
+    <span id="reviewTxt">Click the run chart to jump to a session</span>
+    <button id="bReviewOut">Back to live <kbd>esc</kbd></button>
   </div>
 
-  <div class="body">
-    <div class="col l">
-      <div class="pane" style="flex:1.7">
-        <div class="ph">Scanner <span class="dim3" style="font-weight:400;font-size:10px">top 1500</span><span class="tabs" id="scanTabs">
-          <b data-scan="gain" class="on">Gain</b><b data-scan="lose">Lose</b>
-          <b data-scan="vol">Vol</b><b data-scan="gap">Gap</b></span></div>
-        <div class="scroll"><table id="scan"><thead><tr><th>Sym</th><th>Last</th><th>Chg%</th><th>RVol</th></tr></thead><tbody></tbody></table></div>
-      </div>
-      <div class="pane" style="flex:1">
-        <div class="ph">Watchlist<span class="tabs"><b style="cursor:default"><kbd>w</kbd> add / drop</b></span></div>
-        <div class="scroll"><table id="wl"><thead><tr><th>Sym</th><th>Last</th><th>Chg%</th><th></th></tr></thead><tbody></tbody></table></div>
-      </div>
-    </div>
+  <div class="mid">
+    <nav class="rail" aria-label="Tape">
+      <button class="ri on" id="rTerm" title="Terminal" aria-label="Terminal"><svg class="i" viewBox="0 0 24 24"><path d="M6 3v18M12 2v20M18 5v14"/><rect x="4" y="7" width="4" height="8" rx=".5"/><rect x="10" y="5" width="4" height="10" rx=".5"/><rect x="16" y="9" width="4" height="6" rx=".5"/></svg></button>
+      <button class="ri" id="rRecords" title="Records" aria-label="Records"><svg class="i" viewBox="0 0 24 24"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M17 6h3v1.5a3.5 3.5 0 0 1-3.5 3.5M7 6H4v1.5A3.5 3.5 0 0 0 7.5 11"/></svg></button>
+      <button class="ri" id="rNew" title="New run" aria-label="New run"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg></button>
+      <button class="ri" id="rKeys" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts"><svg class="i" viewBox="0 0 24 24"><rect x="2.5" y="6" width="19" height="12" rx="2"/><path d="M6.5 10h1M10.5 10h1M14.5 10h1M7 14h10"/></svg></button>
+      <span class="gap"></span>
+      <button class="ri" id="bSound" title="Sound" aria-label="Sound"><svg class="i on-ic" viewBox="0 0 24 24"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16.5 9a4 4 0 0 1 0 6M19 6.5a7.5 7.5 0 0 1 0 11"/></svg><svg class="i off" viewBox="0 0 24 24"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M17 9.5l5 5M22 9.5l-5 5"/></svg></button>
+      <button class="ri" id="rSettings" title="When the clock stops" aria-label="Clock settings"><svg class="i" viewBox="0 0 24 24"><path d="M4 7h9M18 7h2M4 17h3M12 17h8"/><circle cx="15.5" cy="7" r="2.2"/><circle cx="9.5" cy="17" r="2.2"/></svg></button>
+    </nav>
 
-    <div class="col">
-      <div class="pane" style="flex:1">
-        <div class="charthead">
-          <span class="sym" id="cSym">SPDY</span>
-          <span class="last" id="cLast">—</span>
-          <span class="mono" id="cChg" style="font-size:12.5px"></span>
-          <span id="cHalt"></span>
-          <span class="dim3" id="cName" style="font-size:12px;margin-left:auto;overflow:hidden;
-            text-overflow:ellipsis;white-space:nowrap"></span>
-          <span class="tfs" id="tfs"><b data-tf="1" class="on">1m</b><b data-tf="5">5m</b>
-            <b data-tf="15">15m</b><b data-tf="60">1h</b><b data-vwap>VWAP</b></span>
-          <span class="mono dim3" id="cZoom" style="font-size:10.5px">150 bars</span>
+    <div class="work">
+      <div class="body">
+        <div class="col l">
+          <section class="pane" style="flex:1.45">
+            <div class="ph" title="The 1,500 biggest names, ranked live"><h2>Scanner</h2>
+              <div class="seg" id="scanTabs"><b data-scan="gain" class="on" title="Biggest gainers today">Up</b><b data-scan="lose" title="Biggest losers today">Down</b><b data-scan="vol" title="Most active against their usual volume">Active</b><b data-scan="gap" title="Biggest gaps from yesterday's close">Gaps</b></div></div>
+            <div class="scroll"><table id="scan"><thead><tr><th>Symbol</th><th>Last</th><th>Today</th><th>RVol</th></tr></thead><tbody></tbody></table></div>
+          </section>
+          <section class="pane" style="flex:1">
+            <div class="ph"><h2>Watchlist</h2><span class="act"><kbd>w</kbd> adds or drops</span></div>
+            <div class="scroll"><table id="wl"><thead><tr><th>Symbol</th><th>Last</th><th>Today</th></tr></thead><tbody></tbody></table></div>
+          </section>
         </div>
-        <div class="chartbox"><canvas id="chart"></canvas></div>
-      </div>
-      <div class="pane" style="height:150px">
-        <div class="ph">Wire<span class="tabs" id="feedTabs">
-          <b data-feed="news" class="on">News</b><b data-feed="mine">Mine</b>
-          <b data-feed="earn">Earnings</b><b data-feed="log">Log</b></span></div>
-        <div class="scroll feed" id="feed"></div>
-      </div>
-    </div>
 
-    <div class="col r">
-      <div class="pane" style="flex:1">
-        <div class="ph">Level II · click to trade</div>
-        <div class="scroll ladder" id="ladder"></div>
-      </div>
-      <div class="pane">
-        <div class="ph">Order ticket</div>
-        <div class="ticket">
-          <div class="bs">
-            <button class="b" id="bBuy">BUY <kbd>b</kbd></button>
-            <button class="s" id="bSell">SELL <kbd>s</kbd></button>
-          </div>
-          <div class="qty">
-            <span>QTY</span><input id="qty" value="10">
-            <button id="qDn">−</button><button id="qUp">+</button>
-          </div>
-          <div class="presets">
-            <button data-bp="25">25%</button><button data-bp="50">50%</button>
-            <button data-bp="100">100%</button><button data-bp="max">max</button>
-          </div>
-          <div class="notional"><span id="qNote">—</span><b id="qBp">—</b></div>
-          <div class="tkt2">
-            <span>STOP</span><input id="tStop" placeholder="0.00" autocomplete="off">
-            <span>TGT</span><input id="tTgt" placeholder="0.00" autocomplete="off">
-          </div>
-          <div class="tkt2">
-            <span>RISK</span><input id="tRisk" value="1" autocomplete="off">
-            <button id="bSize" style="grid-column:3/5;padding:3px 0;font-size:11px">size to risk</button>
-          </div>
-          <button id="bFlat" style="width:100%;padding:7px">FLATTEN ALL <kbd>f</kbd></button>
+        <div class="col">
+          <section class="pane chartpane">
+            <div class="charthead">
+              <div class="ch-id">
+                <div class="ch-l1"><h1 id="cSym">SPDY</h1><span class="last" id="cLast">—</span><span class="chg" id="cChg"></span><span id="cHalt"></span><span class="nm" id="cName"></span></div>
+                <div class="ch-l2" id="cPos">Flat</div>
+              </div>
+              <div class="ch-tools">
+                <div class="seg num" id="tfs"><b data-tf="1" class="on">1m</b><b data-tf="5">5m</b><b data-tf="15">15m</b><b data-tf="60">1h</b></div>
+                <div class="seg" id="vwapSeg"><b data-vwap>VWAP</b></div>
+                <span class="zoom mono" id="cZoom">150 bars</span>
+              </div>
+            </div>
+            <div class="chartbox"><canvas id="chart" aria-label="Price chart"></canvas><span class="chart-hint" id="chartHint">Shift-click the chart to rest a limit there. Drag an order line to move it.</span></div>
+          </section>
+          <section class="pane" style="height:170px;flex:none">
+            <div class="ph"><h2>Wire</h2>
+              <div class="seg" id="feedTabs"><b data-feed="news" class="on">News</b><b data-feed="mine">Yours</b><b data-feed="earn">Earnings</b><b data-feed="log">Log</b></div></div>
+            <div class="scroll feed" id="feed"></div>
+          </section>
+        </div>
+
+        <div class="col r">
+          <section class="pane" style="flex:1.7;min-height:150px">
+            <div class="ph"><h2>Level II <span>click a price to rest an order</span></h2></div>
+            <div class="scroll ladder" id="ladder"></div>
+          </section>
+          <section class="pane" style="flex:none">
+            <div class="ph"><h2>Order ticket</h2><span class="act" id="pdtNote"></span></div>
+            <div class="ticket">
+              <div class="bs">
+                <button class="b" id="bBuy">Buy <kbd>b</kbd></button>
+                <button class="s" id="bSell">Sell <kbd>s</kbd></button>
+              </div>
+              <div class="tk-row">
+                <label for="qty">Shares</label><input id="qty" value="10" inputmode="numeric">
+                <button id="qDn" aria-label="Five fewer shares">−</button><button id="qUp" aria-label="Five more shares">+</button>
+              </div>
+              <div class="presets">
+                <button data-bp="25">25%</button><button data-bp="50">50%</button>
+                <button data-bp="100">100%</button><button data-bp="max">Max</button>
+              </div>
+              <div class="notional"><span id="qNote">—</span><b id="qBp">—</b></div>
+              <div class="tk2">
+                <label for="tStop">Stop</label><input id="tStop" placeholder="none" autocomplete="off">
+                <label for="tTgt">Tgt</label><input id="tTgt" placeholder="none" autocomplete="off">
+              </div>
+              <div class="tk3">
+                <label for="tRisk">Risk %</label><input id="tRisk" value="1" autocomplete="off">
+                <button id="bSize">Size to the stop</button>
+              </div>
+              <button id="bFlat">Flatten everything <kbd>f</kbd></button>
+            </div>
+          </section>
+          <section class="pane" style="flex:.8;min-height:110px">
+            <div class="ph"><h2>Time and sales</h2></div>
+            <div class="scroll tape" id="tape"></div>
+          </section>
         </div>
       </div>
-      <div class="pane" style="flex:.85">
-        <div class="ph">Time &amp; sales</div>
-        <div class="scroll tape" id="tape"></div>
+
+      <div class="bottom">
+        <section class="pane">
+          <div class="ph"><h2>Positions</h2><span class="act" id="posTot"></span></div>
+          <div class="scroll"><table id="pos"><thead><tr><th>Symbol</th><th>Shares</th><th>Avg</th><th>Last</th><th>Open P&amp;L</th><th>Move</th></tr></thead><tbody></tbody></table></div>
+        </section>
+        <section class="pane">
+          <div class="ph"><h2>Orders and fills</h2><span class="act"><button class="quiet" id="bCancelAll" style="height:24px">Cancel all <kbd>c</kbd></button></span></div>
+          <div class="scroll"><table id="blot"><thead><tr><th>Symbol</th><th>Side</th><th>Shares</th><th>Price</th><th>State</th><th>Realized</th></tr></thead><tbody></tbody></table></div>
+        </section>
+        <section class="pane">
+          <div class="ph"><h2>Run</h2><span class="runhead"><span id="ghostLab"></span><span>Best <b id="vBest">—</b></span></span></div>
+          <div class="eqbox" title="Click a session to review it"><canvas id="eq" aria-label="Equity across the run"></canvas></div>
+        </section>
       </div>
     </div>
   </div>
 
-  <div class="bottom">
-    <div class="pane" style="border-right:1px solid var(--line)">
-      <div class="ph">Positions<span class="tabs"><b id="posTot" style="cursor:default"></b></span></div>
-      <div class="scroll"><table id="pos"><thead><tr><th>Sym</th><th>Qty</th><th>Avg</th><th>Last</th><th>Open P&amp;L</th><th>%</th><th></th></tr></thead><tbody></tbody></table></div>
-    </div>
-    <div class="pane" style="border-right:1px solid var(--line)">
-      <div class="ph">Working orders &amp; fills<span class="tabs">
-        <b id="bCancelAll">cancel all</b></span></div>
-      <div class="scroll"><table id="blot"><thead><tr><th>Sym</th><th>Side</th><th>Qty</th><th>Px</th><th>State</th></tr></thead><tbody></tbody></table></div>
-    </div>
-    <div class="pane">
-      <div class="ph">Equity<span class="tabs"><b id="ghostLab" class="dim3" style="cursor:default"></b></span></div>
-      <div class="chartbox"><canvas id="eq"></canvas></div>
-    </div>
-  </div>
-
-  <div class="statusbar">
-    <div>seed <span id="vSeed" class="mono">—</span></div>
-    <div id="vSpeed">paused</div>
-    <div>drawdown <span id="vDd" class="mono">0.00</span></div>
-    <div>burn <span id="vBurn" class="mono">—</span>/session</div>
-    <div id="vMods">standard</div>
-    <div class="tg" id="apBar" title="stop the clock when this happens">
-      <span class="dim3">auto-pause</span>
-      <b data-ap="fill">fill</b><b data-ap="halt">halt</b><b data-ap="news">news</b>
-      <b data-ap="dd">−3%</b><b data-ap="recap">recap</b>
-    </div>
-    <div class="tg"><b id="bSound">sound</b></div>
-    <div class="hint" style="margin-left:auto">synthetic market · no real prices, no real money</div>
-    <div class="hint"><kbd>space</kbd> play <kbd>b</kbd>/<kbd>s</kbd> trade <kbd>f</kbd> flatten <kbd>n</kbd> step <kbd>o</kbd> open <kbd>/</kbd> symbol</div>
-  </div>
+  <footer class="statusbar">
+    <div>Seed <b id="vSeed" title="Copy the seed">—</b></div>
+    <div id="vMods">Standard</div>
+    <div id="vSpeed" class="opt">Paused</div>
+    <div class="opt">Rent <b id="vBurn">—</b> a session</div>
+    <div>Worst drawdown <b id="vDd">0.00</b></div>
+    <div id="scoreBrk" class="opt"></div>
+    <div class="grow perks" id="perkChips"></div>
+    <div>Synthetic market, no real money · <kbd>?</kbd> keys</div>
+  </footer>
 </div>
 
-<div class="modal" id="setup"><div class="card setup">
-  <h2>New run</h2>
-  <p class="lede">A market of 6,200 companies that do not exist, generated from a seed. Every
-  setting changes your score multiplier. Nothing leaves your browser.</p>
-  <div class="howto">
-    <div><b>Find something moving.</b> The scanner ranks every liquid name by session
-      change. Click any row — or search a ticker or company — to pull it onto the chart.</div>
-    <div><b>Trade it.</b> <kbd>B</kbd> buys and <kbd>S</kbd> sells at market, or click a
-      price on the ladder to rest a limit there. <kbd>F</kbd> flattens everything.</div>
-    <div><b>Control the clock.</b> <kbd>Space</kbd> plays and pauses, the speed buttons
-      run up to a full session per second, and it stops on its own at every close.</div>
-    <div><b>Survive twenty sessions.</b> Rent comes out at every close, and under $25k you
-      only get three day trades per five sessions. Score is what is left, adjusted for risk.</div>
+<div class="toosmall">
+  <h1>Tape needs a bigger window</h1>
+  <span>It is a full trading terminal, so it wants at least 1080 by 560. Widen this window or open it on a laptop or desktop.</span>
+</div>
+<div class="pop" id="settingsPop" role="dialog" aria-label="When the clock stops">
+  <h3>Stop the clock when</h3>
+  <p>The clock pauses on its own so you can act before the next minute prints.</p>
+  <div id="apBar">
+    <div class="sw" data-ap="fill"><span>A resting order fills</span><i></i></div>
+    <div class="sw" data-ap="halt"><span>Something you hold is halted</span><i></i></div>
+    <div class="sw" data-ap="news"><span>News hits something you hold</span><i></i></div>
+    <div class="sw" data-ap="dd"><span>The day is down 3%</span><i></i></div>
+    <div class="sw" data-ap="recap"><span>A session closes</span><i></i></div>
   </div>
-  <div class="resume" id="resumeBox" style="display:none">
-    <div class="txt" id="resumeTxt"></div>
-    <button id="bResume" class="on" style="padding:7px 15px">Resume</button>
-    <button id="bDiscard" style="padding:7px 12px">Discard</button>
+  <hr>
+  <div class="sw" id="swSound"><span>Sound</span><i></i></div>
+</div>
+
+<div class="modal" id="setup"><div class="card setup" role="dialog" aria-labelledby="setupTitle">
+  <div class="main">
+    <h2 id="setupTitle">New run</h2>
+    <p class="sub">A market of 6,200 companies that do not exist, built from a seed. Every setting moves your score multiplier. Nothing leaves this machine.</p>
+    <ul class="howto" id="howto">
+      <li><b>Find something moving.</b> The scanner ranks the 1,500 biggest names. Click a row, or press <kbd>/</kbd> and type a ticker.</li>
+      <li><b>Trade it.</b> <kbd>b</kbd> buys and <kbd>s</kbd> sells at market. Click the ladder or shift-click the chart to rest a limit.</li>
+      <li><b>Run the clock.</b> <kbd>space</kbd> plays and pauses. It stops on its own at every close and whenever something you hold moves.</li>
+      <li><b>Last the run.</b> Rent comes out at every close. Under $25k you get three day trades per five sessions.</li>
+    </ul>
+    <div class="mods" id="modGrid"></div>
   </div>
-  <div class="row">
-    <button id="bDaily" class="on" style="padding:8px 16px">Daily challenge</button>
-    <span class="dim3" style="font-size:12px" id="dailyNote"></span>
-  </div>
-  <div class="mods" id="modGrid"></div>
-  <div class="multbar">
-    <span class="big2" id="multVal">1.00×</span>
-    <span class="txt2" id="multTxt"></span>
-  </div>
-  <div class="row">
-    <input id="sSeed" placeholder="seed (blank = random)" style="flex:1">
-    <button id="sStart" class="on" style="padding:9px 20px">Start run</button>
+  <div class="side">
+    <div class="resume" id="resumeBox" style="display:none">
+      <div class="txt" id="resumeTxt"></div>
+      <div class="row"><button id="bResume" class="primary">Resume</button><button id="bDiscard">Discard</button></div>
+    </div>
+    <div class="mult">
+      <span class="big" id="multVal">1.00×</span>
+      <p id="multTxt"></p>
+    </div>
+    <div class="kv" id="setupKv"></div>
+    <p class="example" id="setupEx"></p>
+    <div class="fill"></div>
+    <div class="daily">
+      <button id="bDaily">Play today's daily</button>
+      <span id="dailyNote"></span>
+    </div>
+    <div class="seedrow">
+      <label for="sSeed">Seed, blank for a random market</label>
+      <input id="sSeed" placeholder="random" inputmode="numeric">
+    </div>
+    <button id="sStart" class="primary">Start run</button>
   </div>
 </div></div>
 
-<div class="modal" id="perkModal"><div class="card">
+<div class="modal" id="perkModal"><div class="card" style="width:720px" role="dialog" aria-labelledby="perkTitle">
   <h2 id="perkTitle">Session complete</h2>
   <p class="sub" id="perkSub"></p>
-  <div class="statgrid">
-    <div><div class="k">session P&amp;L</div><div class="v" id="rPl">—</div></div>
-    <div><div class="k">round trips</div><div class="v" id="rTr">—</div></div>
-    <div><div class="k">win rate</div><div class="v" id="rWin">—</div></div>
-    <div><div class="k">best / worst</div><div class="v" id="rBw">—</div></div>
+  <div class="stats" style="--n:5">
+    <div><span class="k">Session P&amp;L</span><span class="v" id="rPl">—</span></div>
+    <div><span class="k">Round trips</span><span class="v" id="rTr">—</span></div>
+    <div><span class="k">Won</span><span class="v" id="rWin">—</span></div>
+    <div><span class="k">Best and worst</span><span class="v" id="rBw">—</span></div>
+    <div><span class="k">Fees and rent</span><span class="v" id="rFee">—</span></div>
   </div>
+  <div class="sessbox"><canvas id="sessEq" aria-label="Equity through the session"></canvas></div>
+  <h3 id="perkHead">Pick one perk. It lasts the rest of the run.</h3>
   <div class="perks" id="perkGrid"></div>
-  <div class="row" id="recapRow"><button id="bContinue" class="on" style="flex:1;padding:9px">Continue <kbd>↵</kbd></button></div>
+  <div class="row" id="recapRow"><span class="grow recapline" id="recapNext"></span><button id="bContinue" class="primary">Next session <kbd>↵</kbd></button></div>
 </div></div>
 
-<div class="modal" id="modal"><div class="card">
+<div class="modal" id="modal"><div class="card" style="width:620px" role="dialog" aria-labelledby="mTitle">
   <h2 id="mTitle">Run complete</h2>
   <div class="big" id="mScore">—</div>
-  <div class="sub" id="mSub"></div>
-  <div class="statgrid">
-    <div><div class="k">equity</div><div class="v" id="mEq">—</div></div>
-    <div><div class="k">return</div><div class="v" id="mRet">—</div></div>
-    <div><div class="k">max drawdown</div><div class="v" id="mDd">—</div></div>
-    <div><div class="k">fills</div><div class="v" id="mTr">—</div></div>
+  <p class="sub" id="mSub"></p>
+  <div class="stats">
+    <div><span class="k">Equity</span><span class="v" id="mEq">—</span></div>
+    <div><span class="k">Return</span><span class="v" id="mRet">—</span></div>
+    <div><span class="k">Worst drawdown</span><span class="v" id="mDd">—</span></div>
+    <div><span class="k">Fills</span><span class="v" id="mTr">—</span></div>
   </div>
   <div class="sharebox" id="mShare"></div>
-  <div style="font-size:11.5px;color:var(--ink3);font-family:var(--mono)">High scores · click a row to replay that market and setup</div>
+  <h3>Your best runs <span class="dim" style="font-weight:400">· click one to replay its market</span></h3>
   <div class="lb" id="mLb"></div>
   <div class="row">
-    <button id="mCopy" style="flex:1;padding:9px">Copy card</button>
-    <button id="mReview" style="flex:1;padding:9px">Review run</button>
+    <button id="mCopy" class="grow">Copy card</button>
+    <button id="mReview" class="grow">Review run</button>
+    <button id="mAgain" class="grow">Same setup</button>
+    <button id="mNew" class="primary grow">New run</button>
   </div>
-  <div class="row">
-    <button id="mAgain" style="flex:1;padding:9px">Run it again</button>
-    <button id="mNew" class="on" style="flex:1;padding:9px">Change modifiers</button>
+</div></div>
+
+<div class="modal" id="records"><div class="card records" role="dialog" aria-labelledby="recTitle">
+  <div class="row"><h2 id="recTitle" class="grow">Records</h2><button id="recClose">Close <kbd>esc</kbd></button></div>
+  <div class="stats" id="recStats"></div>
+  <div class="tablewrap"><table><thead><tr><th>#</th><th>Score</th><th>Return</th><th>Worst drawdown</th><th>Multiplier</th><th style="text-align:left">Setup</th><th>Seed</th><th>Played</th></tr></thead><tbody id="recTbl"></tbody></table></div>
+  <p class="sub" style="font-size:13px">Click a run to replay the same market with the same setup.</p>
+</div></div>
+
+<div class="modal" id="help"><div class="card help" role="dialog" aria-labelledby="helpTitle">
+  <div class="row"><h2 id="helpTitle" class="grow">Keys</h2><button id="helpClose">Close <kbd>esc</kbd></button></div>
+  <div class="keys">
+    <div><span>Play or pause</span><span><kbd>space</kbd></span></div>
+    <div><span>Buy at market</span><span><kbd>b</kbd></span></div>
+    <div><span>Advance one minute</span><span><kbd>n</kbd></span></div>
+    <div><span>Sell at market</span><span><kbd>s</kbd></span></div>
+    <div><span>Close the charted position</span><span><kbd>x</kbd></span></div>
+    <div><span>Find a symbol</span><span><kbd>/</kbd></span></div>
+    <div><span>Flatten everything</span><span><kbd>f</kbd></span></div>
+    <div><span>Walk the scanner</span><span><kbd>↑</kbd><kbd>↓</kbd></span></div>
+    <div><span>Cancel every working order</span><span><kbd>c</kbd></span></div>
+    <div><span>Watch or drop the symbol</span><span><kbd>w</kbd></span></div>
+    <div><span>Five shares fewer or more</span><span><kbd>[</kbd><kbd>]</kbd></span></div>
+    <div><span>Timeframe 1m, 5m, 15m, 1h</span><span><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd><kbd>4</kbd></span></div>
+    <div><span>Rest a limit at a chart price</span><span><kbd>shift</kbd>click</span></div>
+    <div><span>Toggle VWAP</span><span><kbd>v</kbd></span></div>
+    <div><span>Move a working order</span><span>drag its line</span></div>
+    <div><span>Leave review, close a panel</span><span><kbd>esc</kbd></span></div>
+    <div><span>This list</span><span><kbd>?</kbd></span></div>
   </div>
 </div></div>
 <script>
 "use strict";
 if (window.__TAURI_INTERNALS__ || window.__TAURI__) document.documentElement.classList.add("tauri");
-/* ---------------- deterministic noise ---------------- */
 const K1 = 0x7feb352d, K2 = 0x846ca68b, U32 = 1 / 4294967296;
 function mix32(x) {
   x = Math.imul(x ^ (x >>> 16), K1);
@@ -623,7 +769,6 @@ const SECTOR_FUND = {XLTK:"Technology",XLFN:"Financials",XLHC:"Health Care",
   XLCD:"Consumer Discretionary",XLIN:"Industrials",XLCM:"Communication Services",
   XLCS:"Consumer Staples",XLEN:"Energy",XLUT:"Utilities",XLRE:"Real Estate",XLMT:"Materials"};
 
-/* ---------------- headlines ---------------- */
 const HL = {
   beat: ["{n} beats on earnings, lifts full-year guidance","{n} tops estimates as margins expand",
     "{n} posts record quarter, announces buyback","{n} earnings clear the bar, orders accelerating",
@@ -643,7 +788,6 @@ function headline(kind, name, seed, k) {
   return pool[h2(seed ^ 0x1f2e3d, k) % pool.length].replace("{n}", name);
 }
 
-/* ---------------- world ---------------- */
 function tradingDays(years) {
   const out = [], end = new Date(2026, 7, 27);
   const d = new Date(end); d.setDate(d.getDate() - Math.round(years * 365.25) - 40);
@@ -927,7 +1071,6 @@ class World {
   }
 }
 
-/* ---------------- modifiers, perks, storage ---------------- */
 const MODS = {
   regime: { label: "Market", def: "normal", opts: [
     ["calm","Calm","Low volatility, steady uptrend",0.75],
@@ -1020,6 +1163,7 @@ const SND = {
   halt() { beep(150, 300, "sawtooth", .05); },
   bell() { beep(660, 170, "sine", .055); setTimeout(() => beep(880, 300, "sine", .045), 125); },
   bad() { beep(170, 110, "square", .045); },
+  best() { [660, 830, 990, 1320].forEach((f, i) => setTimeout(() => beep(f, 160, "sine", .05), i * 90)); },
 };
 
 function toast(msg, kind) {
@@ -1039,7 +1183,7 @@ function toast(msg, kind) {
 function copyText(txt) {
   try {
     if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(txt).then(() => toast("copied", "good"), () => legacyCopy(txt));
+      navigator.clipboard.writeText(txt).then(() => toast("Copied", "good"), () => legacyCopy(txt));
       return;
     }
   } catch (e) {}
@@ -1052,8 +1196,8 @@ function legacyCopy(txt) {
     document.body.appendChild(ta); ta.select();
     const ok = document.execCommand("copy");
     ta.remove();
-    toast(ok ? "copied" : "could not copy", ok ? "good" : "bad");
-  } catch (e) { toast("could not copy", "bad"); }
+    toast(ok ? "Copied" : "Could not copy", ok ? "good" : "bad");
+  } catch (e) { toast("Could not copy", "bad"); }
 }
 
 function scores() { return LS.get(SCORE_KEY, []); }
@@ -1077,6 +1221,7 @@ function saveRun(r) {
     perks: [...r.perks], peak: r.peak, maxDD: r.maxDD, curve: r.curve,
     dayStart: r.dayStart, focus: r.focus, viewBars: r.viewBars, tf: r.tf,
     sess: r.sess, pending: r.pendingPerks ? r.pendingPerks.map(p => p.id) : null,
+    eqPts: r.eqPts,
   });
 }
 function loadSave() { const s = LS.get(SAVE_KEY, null); return s && s.v === SAVE_V ? s : null; }
@@ -1105,7 +1250,6 @@ function modLabel(p) {
   return out.join(" · ") || "standard";
 }
 
-/* ---------------- the run ---------------- */
 const PDT_LIMIT = 3, PDT_WINDOW = 5, PDT_FLOOR = 25000;
 const TFS = [1, 5, 15, 60], MAXBACK = 40, DD_PAUSE = -.03;
 
@@ -1136,6 +1280,7 @@ class Run {
     this.tf = TFS.indexOf(PREFS.tf) >= 0 ? PREFS.tf : 1;
     this.sess = []; this.pauseMsg = null; this.ddFired = false;
     this.reviewT = null; this.reviewMode = false; this.haltSeen = "";
+    this.eqPts = [[0, this.cash0]];
     this.buildWire();
     this.wirePtr = 0; this.news = [];
     this.say(`run ${this.seed} armed · $${fmt(this.cash0, 0)} · ${this.days} sessions · ` +
@@ -1229,7 +1374,7 @@ class Run {
     if (!this.world.by[tk]) return "no such symbol " + tk;
     qty = Math.floor(qty);
     if (!(qty > 0)) return "quantity must be positive";
-    if (!this.isOpen() && !this.forceOpen) return "market is closed — press O to force it open";
+    if (!this.isOpen() && !this.forceOpen) return "the market is closed";
     const hu = this.haltedUntil(tk);
     if (hu) return `${tk} is halted for ${Math.ceil(hu - this.t)} more minutes`;
     const mid = this.quote(tk)[2];
@@ -1293,6 +1438,28 @@ class Run {
     const o = this.orders.find(x => x.id === id && x.status === "working");
     if (o) { o.status = "canceled"; this.say(`cancel #${id} ${o.tk}`); }
   }
+  amend(id, price) {
+    const o = this.orders.find(x => x.id === id && x.status === "working");
+    if (!o) return "that order is no longer working";
+    price = Math.round(price * 100) / 100;
+    if (!(price > 0)) return "a price has to be above zero";
+    const [bid, ask, mid] = this.quote(o.tk);
+    if (o.kind === "stop") {
+      if (o.side === "buy" && price <= mid) return `a buy stop belongs above ${fmt(mid)}`;
+      if (o.side === "sell" && price >= mid) return `a sell stop belongs below ${fmt(mid)}`;
+      o.stop = price;
+    } else {
+      if (o.side === "buy" && price >= ask) return `a buy limit above the ask ${fmt(ask)} would fill at once, buy at market instead`;
+      if (o.side === "sell" && price <= bid) return `a sell limit below the bid ${fmt(bid)} would fill at once, sell at market instead`;
+      o.limit = price;
+    }
+    this.say(`moved #${id} ${o.tk} ${o.kind} to ${price.toFixed(2)}`);
+    return null;
+  }
+  sample() {
+    const x = Math.round((this.t - this.startDay * MIN_DAY) / MIN_DAY * 10000) / 10000;
+    this.eqPts.push([x, Math.round(this.equity() * 100) / 100]);
+  }
   cancelAll() {
     let n = 0;
     for (const o of this.orders) if (o.status === "working") { o.status = "canceled"; n++; }
@@ -1307,11 +1474,22 @@ class Run {
   }
   flatten() {
     this.orders.forEach(o => { if (o.status === "working") o.status = "canceled"; });
+    const errs = [];
     for (const k in this.pos) {
       const p = this.pos[k];
-      if (p.q) this.submit(k, p.q > 0 ? "sell" : "buy", Math.abs(p.q));
+      if (p.q) { const err = this.submit(k, p.q > 0 ? "sell" : "buy", Math.abs(p.q)); if (err) errs.push(err); }
     }
-    this.say("flattened");
+    this.say(errs.length ? `flatten left ${errs.length} open: ${errs[0]}` : "flattened");
+    return errs[0] || null;
+  }
+  liquidate() {
+    this.orders.forEach(o => { if (o.status === "working") o.status = "canceled"; });
+    for (const k in this.pos) {
+      const p = this.pos[k];
+      if (!p.q) continue;
+      const side = p.q > 0 ? "sell" : "buy", q = this.quote(k);
+      this.fill({ tk: k, side, qty: Math.abs(p.q), kind: "market", status: "working" }, side === "buy" ? q[1] : q[0], "close");
+    }
   }
 
   fill(o, px, why) {
@@ -1335,16 +1513,19 @@ class Run {
     }
     this.cash -= sign * o.qty * px + fee;
     o.status = "filled"; o.avg = px;
-    this.fills.push({ tk: o.tk, side: o.side, qty: o.qty, px, t: this.t, day: this.day, realized });
+    this.fills.push({ tk: o.tk, side: o.side, qty: o.qty, px, t: this.t, day: this.day, realized, fee, why });
     if (this.fills.length > 300) this.fills.shift();
     this.say(`${o.side} ${o.qty} ${o.tk} @ ${px.toFixed(2)} (${why})`);
     if (o.oco) for (const x of this.orders)
       if (x !== o && x.oco === o.oco && x.status === "working") x.status = "canceled";
     if (o.br) this.attachBracket(o);
-    if (why === "market") SND.fill();
+    if (why === "market" || why === "close") SND.fill();
     else {
       SND.resting();
-      this.pauseIf("fill", `${o.side} ${o.qty} ${o.tk} filled at ${px.toFixed(2)} · ${why}`);
+      const msg = `${o.side === "buy" ? "Bought" : "Sold"} ${o.qty} ${o.tk} at ${px.toFixed(2)} on your ${why}` +
+        (realized ? `, ${realized >= 0 ? "made" : "lost"} $${fmt(Math.abs(realized))}` : "");
+      if (!QUIET) toast(msg, realized < 0 ? "bad" : "good");
+      this.pauseIf("fill", msg);
     }
   }
 
@@ -1352,6 +1533,7 @@ class Run {
     if (!this.playing || !PREFS.ap[kind]) return;
     this.playing = false;
     this.pauseMsg = msg;
+    this.pauseKind = kind;
   }
 
   watchHalts() {
@@ -1364,7 +1546,7 @@ class Run {
       if (this.haltSeen === tag) continue;
       this.haltSeen = tag;
       SND.halt();
-      this.pauseIf("halt", `${k} is halted — you are ${this.pos[k].q > 0 ? "long" : "short"} ${Math.abs(this.pos[k].q)}`);
+      this.pauseIf("halt", `${k} is halted and you are ${this.pos[k].q > 0 ? "long" : "short"} ${Math.abs(this.pos[k].q)}.`);
       return;
     }
   }
@@ -1378,7 +1560,8 @@ class Run {
       if (!worst || x.realized < worst.realized) worst = x;
     }
     return { day, fills: f.length, rt: rt.length,
-      wins: rt.filter(x => x.realized > 0).length, best, worst };
+      wins: rt.filter(x => x.realized > 0).length, best, worst,
+      fees: f.reduce((a, x) => a + (x.fee || 0), 0) };
   }
 
   workOrders() {
@@ -1410,7 +1593,7 @@ class Run {
       const h = headline(e.kind, s.name, s.seed, e.k);
       this.news.unshift({ t: e.t, tk: e.tk, kind: e.kind, move: e.j * 100, h });
       if (this.news.length > 120) this.news.pop();
-      if (this.pos[e.tk] && this.pos[e.tk].q) this.pauseIf("news", `${e.tk} — ${h}`);
+      if (this.pos[e.tk] && this.pos[e.tk].q) this.pauseIf("news", `News on ${e.tk}: ${h}.`);
     }
   }
 
@@ -1424,10 +1607,11 @@ class Run {
       if (eq > this.peak) this.peak = eq;
       if (this.peak - eq > this.maxDD) this.maxDD = this.peak - eq;
       if (this.minute === 0) { this.closeSession(); return true; }
+      if (this.minute % 5 === 0) this.sample();
       this.watchHalts();
       if (!this.ddFired && this.dayStart > 0 && (eq - this.dayStart) / this.dayStart <= DD_PAUSE) {
         this.ddFired = true;
-        this.pauseIf("dd", `day P&L ${sgn((eq - this.dayStart) / this.dayStart * 100, 1)}% — clock stopped`);
+        this.pauseIf("dd", `The day is ${sgn((eq - this.dayStart) / this.dayStart * 100, 1)}%.`);
       }
       if (this.pauseMsg) return false;
     }
@@ -1440,6 +1624,7 @@ class Run {
     if (this.has("rebate") && this.cash > 0) this.cash += this.cash * .0005;
     const eq = this.equity();
     this.curve.push(eq);
+    this.sample();
     this.sess.push(Object.assign(this.recapOf(this.day - 1),
       { session: this.session, pl: eq - this.dayStart, equity: eq, burn: b }));
     this.dayStart = eq;
@@ -1468,24 +1653,31 @@ class Run {
   }
 
   finish() {
-    this.flatten();
+    this.liquidate();
     this.finished = true; this.playing = false;
     const eq = this.equity();
     this.curve.push(eq);
     const sc = this.score();
+    this.prevBest = bestScore();
+    this.at = Date.now();
     saveScore({ score: sc, seed: this.seed, equity: Math.round(eq * 100) / 100,
       maxdd: Math.round(this.maxDD * 100) / 100, mult: this.mult, label: modLabel(this.mk),
-      daily: this.daily, mk: this.mk, fills: this.fills.length,
-      perks: [...this.perks].map(p => PERK_BY[p].n) });
+      daily: this.daily, mk: this.mk, fills: this.fills.length, cash0: this.cash0, at: this.at,
+      days: this.days, perks: [...this.perks].map(p => PERK_BY[p].n) });
+    this.rank = scores().findIndex(r => r.at === this.at && r.seed === this.seed) + 1;
     const norm = this.curve.map(x => x / this.cash0);
+    const pts = this.eqPts.map(p => [p[0], Math.round(p[1] / this.cash0 * 10000) / 10000]);
     const g = LS.get(GHOST_KEY, null);
-    if (!g || sc > g.score) LS.set(GHOST_KEY, { score: sc, curve: norm, seed: this.seed });
+    if (!g || sc > g.score) LS.set(GHOST_KEY, { score: sc, curve: norm, pts, seed: this.seed });
     this.say(`run over · equity $${fmt(eq, 2)} · score ${fmt(sc, 1)}`);
     clearSave();
   }
 
   card() {
-    const c = this.curve, lo = Math.min(...c), hi = Math.max(...c);
+    const src = this.eqPts.map(p => p[1]), n = Math.min(40, src.length);
+    const c = [];
+    for (let i = 0; i < n; i++) c.push(src[Math.round(i * (src.length - 1) / Math.max(1, n - 1))]);
+    const lo = Math.min(...c), hi = Math.max(...c);
     const bl = "▁▂▃▄▅▆▇█", sp = (hi - lo) || 1;
     const spark = c.map(v => bl[Math.min(7, Math.floor((v - lo) / sp * 8))]).join("");
     return `TAPE · seed ${this.seed} · ${this.days} sessions · ${this.mult}×\n` +
@@ -1624,6 +1816,7 @@ Run.restore = function (s) {
   r.perks = new Set(s.perks || []); r.sess = s.sess || [];
   r.peak = s.peak || r.cash0; r.maxDD = s.maxDD || 0;
   r.curve = (s.curve && s.curve.length) ? s.curve : [r.cash0];
+  r.eqPts = (s.eqPts && s.eqPts.length) ? s.eqPts : r.curve.map((v, i) => [i, v]);
   r.dayStart = s.dayStart || r.cash0; r.focus = s.focus;
   r.viewBars = s.viewBars || 150;
   r.tf = TFS.indexOf(s.tf) >= 0 ? s.tf : 1;
@@ -1634,7 +1827,6 @@ Run.restore = function (s) {
   return r;
 };
 
-/* ---------------- helpers ---------------- */
 function pad2(n) { return String(n).padStart(2, "0"); }
 function fmt(v, d) {
   if (v === null || v === undefined || !isFinite(v)) return "—";
@@ -1658,58 +1850,101 @@ function flash(el, key, val) {
   prevVals[key] = val;
 }
 
-/* ---------------- chart ---------------- */
-function drawChart() {
-  const cv = $("#chart"), ctx = cv.getContext("2d"), r = cv.getBoundingClientRect();
-  const dpr = devicePixelRatio || 1;
-  cv.width = r.width * dpr; cv.height = r.height * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+const COL = { up: "#44a282", down: "#e5566f", cu: "#e6e7ea", cd: "#e5566f", amber: "#ffb020",
+  ink: "#f4f4f5", ink2: "rgba(244,244,245,.8)", grid: "#24242a", ground: "#131217", vwap: "#4a8ad6",
+  volU: "rgba(230,231,234,.13)", volD: "rgba(229,86,111,.26)" };
+const MONO = '"Plex Mono", ui-monospace, Menlo, monospace';
+
+function prep(cv) {
+  const ctx = cv.getContext("2d"), r = cv.getBoundingClientRect(), dpr = devicePixelRatio || 1;
+  cv.width = Math.max(1, r.width * dpr); cv.height = Math.max(1, r.height * dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   ctx.clearRect(0, 0, r.width, r.height);
+  return { ctx, w: r.width, h: r.height };
+}
+function niceStep(span, n) {
+  const raw = span / Math.max(1, n), mag = Math.pow(10, Math.floor(Math.log10(raw)));
+  const f = raw / mag;
+  return (f < 1.5 ? 1 : f < 3 ? 2 : f < 7 ? 5 : 10) * mag;
+}
+function tag(ctx, x, y, text, bg, fg, align) {
+  ctx.font = `600 11px ${MONO}`;
+  const w = ctx.measureText(text).width + 12, x0 = align === "right" ? x - w : x;
+  ctx.fillStyle = bg; ctx.fillRect(x0, Math.round(y) - 9, w, 18);
+  ctx.fillStyle = fg; ctx.textAlign = "left"; ctx.textBaseline = "middle";
+  ctx.fillText(text, x0 + 6, Math.round(y) + .5);
+  return { x0, w };
+}
+function hhmm(mi) { const m = 570 + ((mi % MIN_DAY) + MIN_DAY) % MIN_DAY; return pad2(Math.floor(m / 60)) + ":" + pad2(m % 60); }
+
+let drag = null;
+
+function drawChart() {
+  const { ctx, w, h } = prep($("#chart"));
   if (!R) return;
   const snap = R.snapshot(), bars = snap.rows;
   if (bars.length < 2) return;
-  const padR = 58, padT = 14, padB = 16, W = r.width - padR, H = r.height - padT - padB;
+  const padR = 66, padT = 16, padB = 22, W = w - padR, H = h - padT - padB;
   let lo = Infinity, hi = -Infinity;
   for (const b of bars) { if (b[2] < lo) lo = b[2]; if (b[1] > hi) hi = b[1]; }
-  const sp0 = (hi - lo) || 1; lo -= sp0 * .08; hi += sp0 * .08;
+  const sp0 = (hi - lo) || hi * .01 || 1; lo -= sp0 * .1; hi += sp0 * .1;
   const sp = hi - lo, Y = p => padT + (hi - p) / sp * H;
   const bw = W / bars.length;
-  geom = { padT, padB, W, H, bw, price: y => hi - (y - padT) / H * sp, t0: snap.t0,
+  geom = { padT, padB, W, H, bw, price: y => hi - (y - padT) / H * sp, y: Y, lo, hi,
     times: snap.times, tf: snap.tf, bars, lines: [] };
 
-  ctx.strokeStyle = "rgba(27,35,48,.75)"; ctx.lineWidth = 1;
-  ctx.font = '10px "IBM Plex Mono", monospace'; ctx.textBaseline = "middle"; ctx.textAlign = "left";
-  for (let g = 0; g <= 5; g++) {
-    const p = lo + sp * g / 5, y = Math.round(Y(p)) + .5;
+  ctx.lineWidth = 1; ctx.font = `11px ${MONO}`; ctx.textBaseline = "middle";
+  const step = niceStep(sp, 5), dec = step < .1 ? 2 : step < 1 ? 2 : step < 10 ? 1 : 0;
+  ctx.strokeStyle = COL.grid; ctx.fillStyle = COL.ink2; ctx.textAlign = "left";
+  for (let p = Math.ceil(lo / step) * step; p <= hi; p += step) {
+    const y = Math.round(Y(p)) + .5;
     ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
-    ctx.fillStyle = "rgba(237,242,247,.40)"; ctx.fillText(p.toFixed(2), W + 8, y);
+    ctx.fillText(p.toFixed(Math.max(dec, 2)), W + 9, y);
+  }
+  const minGap = 84, every = Math.max(1, Math.ceil(minGap / bw));
+  ctx.textAlign = "center";
+  let lastX = -1e9;
+  for (let i = 0; i < bars.length; i++) {
+    const t = snap.times[i], newDay = i > 0 && Math.floor(t / MIN_DAY) !== Math.floor(snap.times[i - 1] / MIN_DAY);
+    const x = i * bw + bw / 2;
+    if (newDay) {
+      ctx.strokeStyle = "#34343a"; ctx.setLineDash([3, 3]);
+      ctx.beginPath(); ctx.moveTo(Math.round(i * bw) + .5, padT); ctx.lineTo(Math.round(i * bw) + .5, padT + H); ctx.stroke();
+      ctx.setLineDash([]);
+    }
+    if ((newDay || i % every === 0) && x - lastX > minGap * .8 && x > 24 && x < W - 24) {
+      const s = Math.floor(t / MIN_DAY) - R.startDay + 1;
+      ctx.fillStyle = COL.ink2;
+      ctx.fillText(newDay ? (s >= 1 ? `S${s} open` : "open") : hhmm(t), x, padT + H + padB / 2 + 1);
+      lastX = x;
+    }
   }
   let vmax = 1; for (const b of bars) if (b[4] > vmax) vmax = b[4];
   for (let i = 0; i < bars.length; i++) {
-    const b = bars[i];
-    ctx.fillStyle = b[3] >= b[0] ? "rgba(47,191,113,.22)" : "rgba(232,83,90,.22)";
-    const vh = b[4] / vmax * 30;
-    ctx.fillRect(i * bw, padT + H - vh, Math.max(1, bw - .6), vh);
+    const b = bars[i], vh = b[4] / vmax * Math.min(44, H * .16);
+    ctx.fillStyle = b[3] >= b[0] ? COL.volU : COL.volD;
+    ctx.fillRect(i * bw + .5, padT + H - vh, Math.max(1, bw - 1), vh);
   }
   for (let i = 0; i < bars.length; i++) {
-    const b = bars[i], up = b[3] >= b[0], col = up ? "#2FBF71" : "#E8535A";
+    const b = bars[i], up = b[3] >= b[0], col = up ? COL.cu : COL.cd;
     const cx = Math.round(i * bw + bw / 2) + .5;
-    if (bw > 2.2) { ctx.strokeStyle = col; ctx.beginPath(); ctx.moveTo(cx, Y(b[1])); ctx.lineTo(cx, Y(b[2])); ctx.stroke(); }
-    ctx.fillStyle = col;
+    ctx.strokeStyle = col;
+    ctx.beginPath(); ctx.moveTo(cx, Y(b[1])); ctx.lineTo(cx, Y(b[2])); ctx.stroke();
     const t = Y(Math.max(b[0], b[3])), bo = Y(Math.min(b[0], b[3]));
-    ctx.fillRect(i * bw + .5, t, Math.max(1, bw - 1.4), Math.max(1, bo - t));
+    const bwid = Math.max(1, Math.min(bw * .72, 11)), x0 = cx - bwid / 2;
+    ctx.fillStyle = col; ctx.fillRect(x0, t, bwid, Math.max(1, bo - t));
   }
   if (PREFS.vwap) {
     const vw = R.vwapOf(snap);
-    ctx.strokeStyle = "rgba(122,162,255,.85)"; ctx.lineWidth = 1.2;
+    ctx.strokeStyle = COL.vwap; ctx.lineWidth = 1.5;
     ctx.beginPath();
     for (let i = 0; i < vw.length; i++) {
       const x = i * bw + bw / 2, y = Y(vw[i]);
-      if (i && Math.floor(snap.times[i] / MIN_DAY) === Math.floor(snap.times[i - 1] / MIN_DAY))
-        ctx.lineTo(x, y); else ctx.moveTo(x, y);
+      if (i && Math.floor(snap.times[i] / MIN_DAY) === Math.floor(snap.times[i - 1] / MIN_DAY)) ctx.lineTo(x, y); else ctx.moveTo(x, y);
     }
     ctx.stroke(); ctx.lineWidth = 1;
-    ctx.fillStyle = "rgba(122,162,255,.85)"; ctx.font = '600 9.5px "IBM Plex Mono", monospace';
-    ctx.textAlign = "left"; ctx.fillText("VWAP", 6, Y(vw[vw.length - 1]) - 6);
+    ctx.fillStyle = COL.vwap; ctx.font = `600 11px ${MONO}`; ctx.textAlign = "left";
+    ctx.fillText("VWAP", 8, Y(vw[vw.length - 1]) - 9);
   }
 
   const t0 = snap.times[0], tEnd = snap.times[snap.times.length - 1] + snap.tf;
@@ -1717,333 +1952,468 @@ function drawChart() {
   for (const f of R.fills) {
     if (f.tk !== R.focus || f.t < t0 || f.t > tEnd) continue;
     const x = xAt(f.t), y = Y(f.px), up = f.side === "buy";
-    ctx.fillStyle = up ? "rgba(47,191,113,.95)" : "rgba(232,83,90,.95)";
+    ctx.fillStyle = up ? COL.up : COL.down;
     ctx.beginPath();
-    ctx.moveTo(x, up ? y + 8 : y - 8);
-    ctx.lineTo(x - 4.2, up ? y + 14 : y - 14);
-    ctx.lineTo(x + 4.2, up ? y + 14 : y - 14);
+    ctx.moveTo(x, up ? y + 7 : y - 7);
+    ctx.lineTo(x - 5, up ? y + 15 : y - 15);
+    ctx.lineTo(x + 5, up ? y + 15 : y - 15);
     ctx.closePath(); ctx.fill();
+  }
+
+  const p = R.pos[R.focus], last = R.quote(R.focus)[2];
+  if (p && p.q) {
+    const y = Math.round(Math.max(padT + 10, Math.min(padT + H - 10, Y(p.avg)))) + .5, pl = (last - p.avg) * p.q;
+    ctx.strokeStyle = COL.amber; ctx.setLineDash([6, 4]);
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); ctx.setLineDash([]);
+    tag(ctx, 0, y, `${p.q > 0 ? "Long" : "Short"} ${Math.abs(p.q)} @ ${fmt(p.avg)}   ${pl >= 0 ? "+" : "−"}$${fmt(Math.abs(pl))}`,
+      COL.amber, "#141416");
   }
 
   for (const o of R.orders) {
     if (o.status !== "working" || o.tk !== R.focus) continue;
-    const px = o.limit || o.stop;
-    if (!(px > 0) || px < lo || px > hi) continue;
-    const y = Math.round(Y(px)) + .5;
-    const col = o.side === "buy" ? "#2FBF71" : "#E8535A";
-    ctx.strokeStyle = col; ctx.setLineDash([2, 4]);
-    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); ctx.setLineDash([]);
-    const tag = `${o.kind === "stop" ? "STP" : "LMT"} ${o.side === "buy" ? "+" : "−"}${o.qty}`;
-    ctx.font = '600 9.5px "IBM Plex Mono", monospace';
-    const tw = ctx.measureText(tag).width + 10;
-    ctx.fillStyle = col; ctx.fillRect(W - tw, y - 6.5, tw, 13);
-    ctx.fillStyle = "#06080B"; ctx.textAlign = "left"; ctx.fillText(tag, W - tw + 5, y);
-    geom.lines.push({ id: o.id, y });
+    const dragging = drag && drag.id === o.id;
+    const px = dragging ? drag.px : (o.limit || o.stop);
+    if (!(px > 0)) continue;
+    const yy = Math.round(Y(Math.max(lo, Math.min(hi, px)))) + .5;
+    const col = o.side === "buy" ? COL.up : COL.down;
+    ctx.strokeStyle = col; ctx.setLineDash(dragging ? [] : [3, 4]);
+    ctx.beginPath(); ctx.moveTo(0, yy); ctx.lineTo(W, yy); ctx.stroke(); ctx.setLineDash([]);
+    const label = `${o.kind === "stop" ? "Stop" : "Limit"} ${o.side === "buy" ? "+" : "−"}${o.qty}  ${fmt(px)}`;
+    const tg = tag(ctx, W - 22, yy, label, col, "#141416", "right");
+    ctx.fillStyle = "#141416"; ctx.fillRect(W - 22, yy - 9, 22, 18);
+    ctx.strokeStyle = col; ctx.strokeRect(W - 21.5, yy - 8.5, 21, 17);
+    ctx.fillStyle = col; ctx.textAlign = "center"; ctx.font = `600 12px ${MONO}`; ctx.fillText("×", W - 11, yy + .5);
+    geom.lines.push({ id: o.id, y: yy, x0: tg.x0, xx: W - 22 });
   }
 
-  const p = R.pos[R.focus];
-  if (p && p.q) {
-    const y = Math.round(Y(p.avg)) + .5;
-    ctx.strokeStyle = "#FFB020"; ctx.setLineDash([6, 3]);
-    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); ctx.setLineDash([]);
-    ctx.fillStyle = "#FFB020"; ctx.fillRect(0, y - 7, 76, 14);
-    ctx.fillStyle = "#06080B"; ctx.font = '600 10px "IBM Plex Mono", monospace';
-    ctx.textAlign = "left"; ctx.fillText((p.q > 0 ? "LONG " : "SHORT ") + Math.abs(p.q), 5, y);
-  }
-  const last = bars[bars.length - 1][3], yl = Y(last);
-  ctx.fillStyle = last >= bars[bars.length - 1][0] ? "#2FBF71" : "#E8535A";
-  ctx.fillRect(W, yl - 8, padR, 16);
-  ctx.fillStyle = "#06080B"; ctx.font = '600 10px "IBM Plex Mono", monospace';
-  ctx.textAlign = "left"; ctx.fillText(last.toFixed(2), W + 7, yl);
+  const lastBar = bars[bars.length - 1], yl = Y(lastBar[3]);
+  tag(ctx, W + 2, yl, lastBar[3].toFixed(2), lastBar[3] >= lastBar[0] ? COL.cu : COL.cd, "#141416");
 
-  if (hover && hover.x < W && hover.x >= 0) {
+  if (drag) {
+    tag(ctx, W + 2, drag.y, drag.px.toFixed(2), COL.ink, "#141416");
+  } else if (hover && hover.x < W && hover.x >= 0 && hover.y > padT && hover.y < padT + H) {
     const i = Math.max(0, Math.min(bars.length - 1, Math.floor(hover.x / bw)));
     const b = bars[i], cx = Math.round(i * bw + bw / 2) + .5;
-    ctx.strokeStyle = "rgba(237,242,247,.45)"; ctx.setLineDash([3, 3]);
+    ctx.strokeStyle = "rgba(244,244,245,.45)"; ctx.setLineDash([3, 3]);
     ctx.beginPath(); ctx.moveTo(cx, padT); ctx.lineTo(cx, padT + H); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(0, hover.y + .5); ctx.lineTo(W, hover.y + .5); ctx.stroke();
     ctx.setLineDash([]);
-    ctx.fillStyle = "#FFB020"; ctx.fillRect(W, hover.y - 8, padR, 16);
-    ctx.fillStyle = "#06080B"; ctx.font = '600 10px "IBM Plex Mono", monospace';
-    ctx.textAlign = "left"; ctx.fillText(geom.price(hover.y).toFixed(2), W + 7, hover.y);
-    const mi = snap.times[i], tw = 42, tx = Math.min(W - tw, Math.max(0, cx - tw / 2));
-    ctx.fillStyle = "#FFB020"; ctx.fillRect(tx, padT + H, tw, padB);
-    ctx.fillStyle = "#06080B"; ctx.textAlign = "center";
-    ctx.fillText(pad2(Math.floor((570 + mi % MIN_DAY) / 60)) + ":" + pad2((570 + mi % MIN_DAY) % 60),
-      tx + tw / 2, padT + H + padB / 2);
-    ctx.textAlign = "left"; ctx.font = '10.5px "IBM Plex Mono", monospace';
-    ctx.fillStyle = "rgba(13,17,22,.88)"; ctx.fillRect(4, 3, 280, 17);
-    let x = 10; const up = b[3] >= b[0];
-    for (const [k, val] of [["O", b[0]], ["H", b[1]], ["L", b[2]], ["C", b[3]]]) {
-      ctx.fillStyle = "rgba(237,242,247,.40)"; ctx.fillText(k, x, 12); x += 10;
-      ctx.fillStyle = up ? "#2FBF71" : "#E8535A"; ctx.fillText(val.toFixed(2), x, 12); x += 48;
+    tag(ctx, W + 2, hover.y, geom.price(hover.y).toFixed(2), COL.ink, "#141416");
+    ctx.font = `600 11px ${MONO}`;
+    const tl = hhmm(snap.times[i]), tw = ctx.measureText(tl).width + 12, tx = Math.min(W - tw, Math.max(0, cx - tw / 2));
+    ctx.fillStyle = COL.ink; ctx.fillRect(tx, padT + H + 2, tw, 18);
+    ctx.fillStyle = "#141416"; ctx.textAlign = "center"; ctx.fillText(tl, tx + tw / 2, padT + H + 11.5);
+    ctx.textAlign = "left"; ctx.font = `12px ${MONO}`;
+    const up = b[3] >= b[0], parts = [["O", b[0]], ["H", b[1]], ["L", b[2]], ["C", b[3]]];
+    ctx.fillStyle = "rgba(19,18,23,.92)"; ctx.fillRect(6, 4, 380, 22);
+    let x = 14;
+    for (const [k, val] of parts) {
+      ctx.fillStyle = COL.ink2; ctx.fillText(k, x, 15); x += 12;
+      ctx.fillStyle = up ? COL.ink : COL.down; ctx.fillText(val.toFixed(2), x, 15); x += ctx.measureText(val.toFixed(2)).width + 14;
     }
-    ctx.fillStyle = "rgba(237,242,247,.40)"; ctx.fillText("V", x, 12); x += 10;
-    ctx.fillStyle = "#EDF2F7"; ctx.fillText(Math.round(b[4]).toLocaleString(), x, 12);
+    ctx.fillStyle = COL.ink2; ctx.fillText("Vol", x, 15); x += 28;
+    ctx.fillStyle = COL.ink; ctx.fillText(Math.round(b[4]).toLocaleString(), x, 15);
+    const near = geom.lines.find(l => Math.abs(l.y - hover.y) < 6);
+    $("#chart").classList.toggle("drag", !!near && hover.x < near.xx);
+    $("#chart").style.cursor = near && hover.x >= near.xx ? "pointer" : "";
   }
 }
 
 function drawEquity() {
-  const cv = $("#eq"), ctx = cv.getContext("2d"), r = cv.getBoundingClientRect();
-  const dpr = devicePixelRatio || 1;
-  cv.width = r.width * dpr; cv.height = r.height * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  ctx.clearRect(0, 0, r.width, r.height);
+  const { ctx, w, h } = prep($("#eq"));
   if (!R) return;
-  const live = R.curve.concat([R.equity()]);
+  const live = R.eqPts.slice();
+  const xNow = Math.max(0, (R.t - R.startDay * MIN_DAY) / MIN_DAY);
+  const days = R.days <= 5 || R.finished ? R.days : Math.min(R.days, Math.max(5, Math.ceil(xNow + .001) + 1));
+  if (!R.finished) live.push([Math.min(days, xNow), R.equity()]);
   const ghost = LS.get(GHOST_KEY, null);
-  const gc = ghost ? ghost.curve.map(x => x * R.cash0) : null;
-  const pad = 10, W = r.width - pad * 2, H = r.height - pad * 2;
-  let lo = Math.min(R.cash0, ...live), hi = Math.max(R.cash0, ...live);
-  if (gc) { for (let i = 0; i < Math.min(gc.length, live.length + 2); i++) { lo = Math.min(lo, gc[i]); hi = Math.max(hi, gc[i]); } }
-  const sp = (hi - lo) || 1;
-  const nPts = Math.max(live.length, gc ? Math.min(gc.length, R.days + 2) : 0, 2);
-  const X = i => pad + i / (nPts - 1) * W, Y = v => pad + (hi - v) / sp * H;
-  eqGeom = { pad, W, nPts, n: live.length };
-  const y0 = Y(R.cash0);
-  ctx.strokeStyle = "rgba(237,242,247,.22)"; ctx.setLineDash([3, 3]);
-  ctx.beginPath(); ctx.moveTo(pad, y0); ctx.lineTo(pad + W, y0); ctx.stroke(); ctx.setLineDash([]);
-  if (gc) {
-    ctx.strokeStyle = "rgba(255,176,32,.55)"; ctx.setLineDash([4, 3]); ctx.lineWidth = 1.2;
-    ctx.beginPath();
-    for (let i = 0; i < Math.min(gc.length, nPts); i++) i ? ctx.lineTo(X(i), Y(gc[i])) : ctx.moveTo(X(i), Y(gc[i]));
-    ctx.stroke(); ctx.setLineDash([]);
+  const gp = ghost ? (ghost.pts || ghost.curve.map((v, i) => [i, v])).filter(p => p[0] <= days)
+    .map(p => [p[0], p[1] * R.cash0]) : null;
+  const padL = 12, padR = 64, padT = 14, padB = 22, W = w - padL - padR, H = h - padT - padB;
+  let lo = R.cash0, hi = R.cash0;
+  for (const p of live) { lo = Math.min(lo, p[1]); hi = Math.max(hi, p[1]); }
+  if (gp) for (const p of gp) { lo = Math.min(lo, p[1]); hi = Math.max(hi, p[1]); }
+  const pad0 = Math.max((hi - lo) * .12, R.cash0 * .004); lo -= pad0; hi += pad0;
+  const X = x => padL + x / days * W, Y = v => padT + (hi - v) / (hi - lo) * H;
+  eqGeom = { padL, W, days };
+  ctx.lineWidth = 1; ctx.font = `11px ${MONO}`; ctx.textBaseline = "middle";
+  const step = niceStep(hi - lo, 3);
+  ctx.textAlign = "left";
+  for (let v = Math.ceil(lo / step) * step; v <= hi; v += step) {
+    const y = Math.round(Y(v)) + .5;
+    ctx.strokeStyle = COL.grid; ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(padL + W, y); ctx.stroke();
+    ctx.fillStyle = COL.ink2; ctx.fillText(fmt(v, 0), padL + W + 8, y);
   }
-  const gain = live[live.length - 1] >= R.cash0;
-  const g = ctx.createLinearGradient(0, pad, 0, pad + H);
-  g.addColorStop(0, gain ? "rgba(47,191,113,.30)" : "rgba(232,83,90,.30)");
-  g.addColorStop(1, "rgba(0,0,0,0)");
-  ctx.beginPath(); ctx.moveTo(X(0), Y(live[0]));
-  live.forEach((v, i) => ctx.lineTo(X(i), Y(v)));
-  ctx.lineTo(X(live.length - 1), pad + H); ctx.lineTo(X(0), pad + H); ctx.closePath();
-  ctx.fillStyle = g; ctx.fill();
-  ctx.beginPath(); live.forEach((v, i) => i ? ctx.lineTo(X(i), Y(v)) : ctx.moveTo(X(i), Y(v)));
-  ctx.strokeStyle = gain ? "#2FBF71" : "#E8535A"; ctx.lineWidth = 1.7; ctx.stroke();
-  ctx.beginPath(); ctx.arc(X(live.length - 1), Y(live[live.length - 1]), 2.6, 0, 7);
-  ctx.fillStyle = gain ? "#2FBF71" : "#E8535A"; ctx.fill();
+  const lab = days <= 5 ? 1 : days <= 20 ? 5 : 10;
+  ctx.textAlign = "center";
+  for (let s = 0; s <= days; s++) {
+    const x = Math.round(X(s)) + .5;
+    if (s > 0 && s < days && days <= 20) {
+      ctx.strokeStyle = COL.grid; ctx.beginPath(); ctx.moveTo(x, padT); ctx.lineTo(x, padT + H); ctx.stroke();
+    }
+    if (s % lab === 0 && s > 0) { ctx.fillStyle = COL.ink2; ctx.fillText(`S${s}`, Math.min(x, padL + W - 10), padT + H + 12); }
+  }
+  ctx.textAlign = "left"; ctx.fillStyle = COL.ink2; ctx.fillText("Start", padL, padT + H + 12);
+  const y0 = Math.round(Y(R.cash0)) + .5;
+  ctx.strokeStyle = "rgba(244,244,245,.35)"; ctx.setLineDash([3, 3]);
+  ctx.beginPath(); ctx.moveTo(padL, y0); ctx.lineTo(padL + W, y0); ctx.stroke();
+  if (gp && gp.length > 1) {
+    ctx.strokeStyle = "rgba(244,244,245,.55)"; ctx.setLineDash([4, 4]);
+    ctx.beginPath(); gp.forEach((p, i) => i ? ctx.lineTo(X(p[0]), Y(p[1])) : ctx.moveTo(X(p[0]), Y(p[1]))); ctx.stroke();
+  }
+  ctx.setLineDash([]);
+  if (R.reviewMode && R.reviewS) {
+    ctx.fillStyle = "rgba(255,176,32,.12)";
+    ctx.fillRect(X(R.reviewS - 1), padT, W / days, H);
+  }
+  ctx.strokeStyle = COL.amber; ctx.lineWidth = 2; ctx.lineJoin = "round";
+  ctx.beginPath(); live.forEach((p, i) => i ? ctx.lineTo(X(p[0]), Y(p[1])) : ctx.moveTo(X(p[0]), Y(p[1]))); ctx.stroke();
+  const end = live[live.length - 1];
+  ctx.fillStyle = COL.amber; ctx.beginPath(); ctx.arc(X(end[0]), Y(end[1]), 3, 0, 7); ctx.fill();
+  ctx.lineWidth = 1;
 
-  const lab = $("#ghostLab");
-  if (gc && gc.length > live.length - 1) {
-    const gv = gc[live.length - 1] , d = live[live.length - 1] - gv;
-    lab.textContent = (d >= 0 ? "ahead of best by " : "behind best by ") + fmt(Math.abs(d), 0);
-    lab.className = d >= 0 ? "up" : "down";
-  } else { lab.textContent = ghost ? "past your best run" : "no ghost yet"; lab.className = "dim3"; }
+  const lab2 = $("#ghostLab");
+  if (gp && gp.length > 1) {
+    let gv = null;
+    for (const p of gp) { if (p[0] <= end[0] + 1e-6) gv = p[1]; else break; }
+    if (gv === null || end[0] > gp[gp.length - 1][0] + .01) { lab2.textContent = "Past your best run's length"; lab2.className = ""; }
+    else {
+      const d = end[1] - gv;
+      lab2.innerHTML = `${d >= 0 ? "Ahead of" : "Behind"} your best by <b class="${d >= 0 ? "up" : "down"}">$${fmt(Math.abs(d), 0)}</b>`;
+      lab2.className = "";
+    }
+  } else { lab2.textContent = "Finish a run to race it next time"; lab2.className = ""; }
+  if (R.finished) lab2.textContent = ghost && ghost.seed === R.seed && ghost.score === R.score() ? "This run is your best" : "Run over";
 }
 
-/* ---------------- panels ---------------- */
+function drawSession(cv, s) {
+  const { ctx, w, h } = prep(cv);
+  const pts = R.eqPts.filter(p => p[0] >= s - 1 - 1e-6 && p[0] <= s + 1e-6);
+  if (pts.length < 2) return;
+  const open = pts[0][1];
+  const padR = 118, padT = 8, padB = 20, W = w - padR, H = h - padT - padB;
+  let lo = open, hi = open;
+  for (const p of pts) { lo = Math.min(lo, p[1]); hi = Math.max(hi, p[1]); }
+  const pd = Math.max((hi - lo) * .15, open * .002); lo -= pd; hi += pd;
+  const X = x => (x - (s - 1)) * W, Y = v => padT + (hi - v) / (hi - lo) * H;
+  ctx.font = `11px ${MONO}`; ctx.textBaseline = "middle";
+  ctx.strokeStyle = "rgba(244,244,245,.35)"; ctx.setLineDash([3, 3]);
+  ctx.beginPath(); ctx.moveTo(0, Math.round(Y(open)) + .5); ctx.lineTo(W, Math.round(Y(open)) + .5); ctx.stroke(); ctx.setLineDash([]);
+  ctx.strokeStyle = COL.amber; ctx.lineWidth = 2; ctx.lineJoin = "round";
+  ctx.beginPath(); pts.forEach((p, i) => i ? ctx.lineTo(X(p[0]), Y(p[1])) : ctx.moveTo(X(p[0]), Y(p[1]))); ctx.stroke();
+  ctx.lineWidth = 1;
+  const close = pts[pts.length - 1][1], rc = R.sess[s - 1];
+  if (rc && rc.burn && pts.length > 2) {
+    const yA = Y(pts[pts.length - 2][1]), yB = Y(close);
+    ctx.fillStyle = COL.ink2; ctx.textAlign = "right";
+    ctx.fillText(`rent −$${fmt(rc.burn, 0)}`, W - 8, (yA + yB) / 2);
+  }
+  ctx.fillStyle = COL.ink2; ctx.textAlign = "left";
+  ctx.fillText(`open ${fmt(open, 0)}`, W + 8, Y(open) + (close >= open ? 8 : -8));
+  ctx.fillStyle = COL.ink; ctx.fillText(`close ${fmt(close, 0)}`, W + 8, Y(close) + (close >= open ? -8 : 8));
+  ctx.fillStyle = COL.ink2;
+  [["09:30", 0], ["12:45", .5], ["16:00", 1]].forEach(([t, f]) => {
+    ctx.textAlign = f === 0 ? "left" : f === 1 ? "right" : "center"; ctx.fillText(t, f * W, padT + H + 12);
+  });
+}
+
+const ICON_PLAY = '<svg viewBox="0 0 14 14"><path d="M3 1.5l9 5.5-9 5.5z"/></svg>';
+const ICON_PAUSE = '<svg viewBox="0 0 14 14"><path d="M3 1.5h3v11H3zM8 1.5h3v11H8z"/></svg>';
+let scanRows = [];
+
+function held(tk) { return !!(R.pos[tk] && R.pos[tk].q); }
+function tkCell(tk) { return `<td class="tk${held(tk) ? " amb" : ""}">${tk}</td>`; }
+
 function renderFeed() {
   const el = $("#feed");
   if (feedTab === "log") {
     el.className = "scroll logbox";
     setHTML(el, R.log.slice(-40).reverse().map(l => {
       const i = l.indexOf(" ");
-      return `<div><b>${l.slice(0, i)}</b> ${l.slice(i + 1)}</div>`;
+      return `<div><b>${l.slice(0, i)}</b>${l.slice(i + 1)}</div>`;
     }).join(""));
     return;
   }
   el.className = "scroll feed";
+  const note = t => `<div class="note">${t}</div>`;
   if (feedTab === "earn") {
     const u = R.upcoming(14);
     setHTML(el, u.length ? u.map(e => {
       const dir = e.dir ? (e.dir === "beat" ? '<span class="up">beat expected</span>'
-        : '<span class="down">miss expected</span>') : '<span class="dim3">result unknown</span>';
-      return `<div class="n" data-t="${e.tk}"><span class="t">S${e.day}</span>` +
-        `<span class="s">${e.tk}</span><span class="h">${R.world.by[e.tk].name} reports` +
-        `${e.held ? ' <span class="amb">· you hold this</span>' : ""}</span>` +
-        `<span class="m">${dir}</span></div>`;
-    }).join("") : '<div class="n"><span></span><span></span><span class="dim3">no earnings scheduled in this run</span><span></span></div>');
+        : '<span class="down">miss expected</span>') : '<span class="dim">result unknown</span>';
+      return `<div class="n${e.held ? " held" : ""}" data-t="${e.tk}"><span class="t">S${e.day}</span>` +
+        `<span class="s">${e.tk}</span><span class="h">${R.world.by[e.tk].name} reports at the open` +
+        `${e.held ? ", and you hold it" : ""}</span><span class="m">${dir}</span></div>`;
+    }).join("") : note("No more earnings land inside this run."));
     return;
   }
   let feed = R.news;
   if (feedTab === "mine") {
     const mine = new Set(watch.concat(Object.keys(R.pos).filter(k => R.pos[k].q)));
     feed = R.news.filter(n => mine.has(n.tk));
-    if (!feed.length) {
-      setHTML(el, '<div class="n"><span></span><span></span><span class="dim3">' +
-        'nothing on the wire about what you hold or watch</span><span></span></div>');
-      return;
-    }
+    if (!feed.length) { setHTML(el, note("Nothing on the wire yet about what you hold or watch.")); return; }
   }
-  setHTML(el, feed.length ? feed.slice(0, 40).map(n => {
-    const cls = n.move >= 0 ? "up" : "down";
-    return `<div class="n" data-t="${n.tk}"><span class="t">` +
-      `${pad2(Math.floor((570 + n.t % MIN_DAY) / 60))}:${pad2((570 + n.t % MIN_DAY) % 60)}</span>` +
-      `<span class="s">${n.tk}</span><span class="h">${n.h}</span>` +
-      `<span class="m ${cls}">${sgn(n.move, 1)}%</span></div>`;
-  }).join("") : '<div class="n"><span></span><span></span><span class="dim3">the wire is quiet</span><span></span></div>');
+  setHTML(el, feed.length ? feed.slice(0, 40).map(n =>
+    `<div class="n${held(n.tk) ? " held" : ""}" data-t="${n.tk}"><span class="t">${hhmm(n.t)}</span>` +
+    `<span class="s">${n.tk}</span><span class="h">${n.h}</span>` +
+    `<span class="m ${n.move >= 0 ? "up" : "down"}">${sgn(n.move, 1)}%</span></div>`).join("")
+    : note("The wire is quiet. Headlines print here as they hit, and the clock stops when one is about you."));
+}
+
+function findingLine(q) {
+  const tk = R.focus, p = R.pos[tk], hu = R.haltedUntil(tk);
+  const out = [];
+  if (hu) out.push(`<span class="down">Halted for ${Math.ceil(hu - R.t)} more minutes, nothing fills until it reopens</span>`);
+  if (p && p.q) {
+    const pl = (q[2] - p.avg) * p.q, pct = (q[2] / p.avg - 1) * 100 * Math.sign(p.q);
+    out.push(`${p.q > 0 ? "Long" : "Short"} <b>${Math.abs(p.q)}</b> at <b>${fmt(p.avg)}</b>, ` +
+      `<b class="${pl >= 0 ? "up" : "down"}">${pl >= 0 ? "+" : "−"}$${fmt(Math.abs(pl))}</b> open (${sgn(pct)}%)`);
+    const w = R.orders.filter(o => o.status === "working" && o.tk === tk && o.reduce);
+    const st = w.find(o => o.kind === "stop"), tg = w.find(o => o.kind === "limit");
+    if (st) out.push(`stop <b>${fmt(st.stop)}</b>, risking $${fmt(Math.abs(st.stop - p.avg) * Math.abs(p.q), 0)}`);
+    else out.push("no stop working");
+    if (tg) out.push(`target <b>${fmt(tg.limit)}</b>`);
+  } else {
+    const B = R.world.bars(tk, R.day), m = Math.max(1, R.minute);
+    let lo = Infinity, hi = -Infinity;
+    for (let i = 0; i < m; i++) { if (B.l[i] < lo) lo = B.l[i]; if (B.h[i] > hi) hi = B.h[i]; }
+    out.push(`Flat. Today's range <b>${fmt(lo)}</b> to <b>${fmt(hi)}</b>`);
+  }
+  const er = R.wire.slice(R.wirePtr).find(e => e.tk === tk && (e.kind === "beat" || e.kind === "miss"));
+  if (er) {
+    const s = Math.floor(er.t / MIN_DAY) - R.startDay + 1;
+    out.push(s === R.session + 1 ? "reports later today" : `reports at the open of session ${s}`);
+  }
+  return out.join(" · ");
 }
 
 function render() {
   if (!R) return;
   const eq = R.equity();
-  $("#vDay").textContent = `${Math.min(R.session + 1, R.days)} / ${R.days}`;
+  $("#vDay").textContent = `${Math.min(R.session + 1, R.days)} of ${R.days}`;
   $("#vClock").textContent = R.clock();
-  $("#vOpen").innerHTML = R.isOpen() ? '<span class="pill up">OPEN</span>'
-    : `<span class="pill" style="color:${R.forceOpen ? "var(--amber)" : "var(--down)"}">${R.forceOpen ? "FORCED" : "CLOSED"}</span>`;
+  $("#vOpen").textContent = R.reviewMode ? "Live clock" : "Clock";
+  const left = MIN_DAY - R.minute;
+  $("#sessLeft").textContent = R.finished ? "Run over" : `${Math.floor(left / 60)}h ${pad2(left % 60)}m left`;
+  const today = R.day, ticks = R.fills.filter(f => f.day === today)
+    .map(f => `<i class="tick" style="left:${((f.t % MIN_DAY) / MIN_DAY * 100).toFixed(2)}%"></i>`);
+  for (let i = R.wirePtr; i < R.wire.length; i++) {
+    const e = R.wire[i];
+    if (Math.floor(e.t / MIN_DAY) > today) break;
+    if ((e.kind === "beat" || e.kind === "miss") && held(e.tk))
+      ticks.push(`<i class="tick e" style="left:${((e.t % MIN_DAY) / MIN_DAY * 100).toFixed(2)}%"></i>`);
+  }
+  setHTML($("#sessStrip"), `<i class="fill" style="width:${(R.minute / MIN_DAY * 100).toFixed(2)}%"></i>` + ticks.join(""));
   const e1 = $("#vEquity"); flash(e1, "eq", Math.round(eq * 100)); e1.textContent = fmt(eq);
   const dp = eq - R.dayStart, d1 = $("#vDayPl");
-  d1.textContent = sgn(dp); d1.className = "v " + (dp >= 0 ? "up" : "down");
-  $("#vBp").textContent = fmt(R.bp(), 0);
-  $("#vPdt").innerHTML = R.pdtOn
-    ? `<span class="${R.pdtUsed() >= R.pdtLimit() ? "down" : ""}">${R.pdtUsed()} / ${R.pdtLimit()}</span>`
-    : '<span class="dim3">off</span>';
-  $("#vScore").innerHTML = `${fmt(R.score(), 0)} <span class="dim3" style="font-size:10px">${R.mult}×</span>`;
+  d1.textContent = sgn(dp); d1.className = "v " + (dp > 0 ? "up" : dp < 0 ? "down" : "");
+  const sc = R.score();
+  setHTML($("#vScore"), `${fmt(sc, 0)} <small>×${R.mult.toFixed(2)}</small>`);
   const bs = bestScore(R.mult);
   $("#vBest").textContent = bs === null ? "—" : fmt(bs, 0);
   $("#vSeed").textContent = R.seed;
-  $("#vSpeed").textContent = R.playing ? R.speed + "× running" : "paused";
-  $("#vDd").textContent = fmt(R.maxDD);
+  $("#vSpeed").textContent = R.playing ? `Running at ${R.speed === 390 ? "a session a second" : R.speed + "×"}` : "Paused";
+  $("#vDd").textContent = "$" + fmt(R.maxDD);
   $("#vBurn").textContent = "$" + fmt(R.burn * (R.has("cushion") ? .5 : 1), 0);
-  $("#vMods").textContent = modLabel(R.mk) + (R.daily ? " · daily" : "");
-  $("#bPlay").textContent = R.playing ? "❚❚" : "▶";
-  $("#bPlay").classList.toggle("on", R.playing);
-  $("#bOpen").classList.toggle("on", R.forceOpen);
+  $("#vMods").textContent = modLabel(R.mk) + (R.daily ? ", daily" : "");
+  const pen = (R.has("steady") ? .35 : .5) * R.maxDD;
+  $("#scoreBrk").innerHTML = `Score from P&amp;L <b>${sgn(eq - R.cash0, 0)}</b> less <b>${fmt(pen, 0)}</b> for drawdown, ×${R.mult.toFixed(2)}`;
+  const bp = $("#bPlay");
+  setHTML(bp, R.playing ? ICON_PAUSE : ICON_PLAY);
+  bp.classList.toggle("on", R.playing);
+  bp.setAttribute("aria-label", R.playing ? "Pause" : "Play");
+  document.querySelectorAll("[data-speed]").forEach(b => b.classList.toggle("on", +b.dataset.speed === R.speed));
   $("#app").classList.toggle("reviewing", R.reviewMode);
   $("#reviewBar").classList.toggle("show", R.reviewMode);
-  setHTML($("#perkChips"), [...R.perks].map(p => `<span class="chip">${PERK_BY[p].n}</span>`).join(""));
+  $("#perkChips").textContent = R.perks.size ? "Perks: " + [...R.perks].map(p => PERK_BY[p].n).join(", ") : "";
 
-  const s = R.world.by[R.focus];
+  const s = R.world.by[R.focus], q = R.quote(R.focus);
   $("#cSym").textContent = R.focus;
-  $("#cName").textContent = s.name;
-  $("#cZoom").textContent = R.viewBars + " bars · scroll to zoom";
+  $("#cName").textContent = s.name + (s.kind === "stock" ? `, ${s.sector}` : "");
+  $("#cZoom").textContent = R.viewBars + " bars";
   document.querySelectorAll("[data-tf]").forEach(b => b.classList.toggle("on", +b.dataset.tf === R.tf));
   $("[data-vwap]").classList.toggle("on", !!PREFS.vwap);
-  $("#bSound").classList.toggle("on", !!PREFS.sound);
+  $("#bSound").classList.toggle("muted", !PREFS.sound);
+  $("#swSound").classList.toggle("on", !!PREFS.sound);
   document.querySelectorAll("[data-ap]").forEach(b => b.classList.toggle("on", !!PREFS.ap[b.dataset.ap]));
-  const q = R.quote(R.focus);
-  $("#qNote").textContent = `${qty} \u00d7 ${fmt(q[1])} = $${fmt(qty * q[1], 0)}`;
-  const bpLeft = R.bp() - qty * q[1];
-  $("#qBp").textContent = `$${fmt(R.bp(), 0)} bp`;
-  $("#qBp").className = bpLeft < 0 ? "down" : "";
   const c2 = $("#cLast"); flash(c2, "last", Math.round(q[2] * 100)); c2.textContent = fmt(q[2]);
-  const dayOpen = R.px(R.focus, R.day * MIN_DAY);
-  const ch = (q[2] / dayOpen - 1) * 100;
-  $("#cChg").textContent = sgn(ch) + "%";
-  $("#cChg").className = "mono " + (ch >= 0 ? "up" : "down");
+  const ch = (q[2] / R.px(R.focus, R.day * MIN_DAY) - 1) * 100;
+  $("#cChg").textContent = sgn(ch) + "% today";
+  $("#cChg").className = "chg " + (ch >= 0 ? "up" : "down");
   const hu = R.haltedUntil(R.focus);
-  $("#cHalt").innerHTML = hu ? `<span class="pill down">HALTED ${Math.ceil(hu - R.t)}m</span>` : "";
+  setHTML($("#cHalt"), hu ? `<span class="pill bad">Halted ${Math.ceil(hu - R.t)}m</span>` : "");
+  setHTML($("#cPos"), findingLine(q));
+  $("#chartHint").style.display = R.fills.length < 2 && !R.reviewMode ? "" : "none";
 
-  const rows = R.scan(scanMode, R.has("radar") ? 26 : 12);
-  setHTML($("#scan tbody"), rows.map(x =>
-    `<tr data-t="${x.tk}" class="${x.tk === R.focus ? "sel" : ""}"><td>${x.tk}</td>` +
-    `<td>${fmt(x.last)}</td><td class="${x.chg >= 0 ? "up" : "down"}">${sgn(x.chg)}</td>` +
-    `<td class="dim">${fmt(x.rv, 1)}</td></tr>`).join(""));
+  const ask = q[1], bpv = R.bp();
+  $("#qNote").textContent = `${fmt(qty, 0)} × ${fmt(ask)} = $${fmt(qty * ask, 0)}`;
+  $("#qBp").textContent = `of $${fmt(bpv, 0)} free`;
+  $("#qBp").className = bpv - qty * ask < 0 ? "down" : "";
+  const used = R.pdtUsed(), lim = R.pdtLimit();
+  $("#pdtNote").innerHTML = !R.pdtOn ? "No day trade limit"
+    : eq >= PDT_FLOOR ? "Over $25k, no limit"
+    : `<span class="${used >= lim ? "down" : ""}">${Math.max(0, lim - used)} of ${lim} day trades left</span>`;
 
-  setHTML($("#wl tbody"), watch.map(tk => {
+  scanRows = R.scan(scanMode, R.has("radar") ? 26 : 12);
+  setHTML($("#scan tbody"), scanRows.map(x =>
+    `<tr data-t="${x.tk}" class="${x.tk === R.focus ? "sel" : ""}">${tkCell(x.tk)}` +
+    `<td>${fmt(x.last)}</td><td class="${x.chg >= 0 ? "up" : "down"}">${sgn(x.chg)}%</td>` +
+    `<td>${fmt(x.rv, 1)}</td></tr>`).join(""));
+
+  setHTML($("#wl tbody"), watch.length ? watch.map(tk => {
     const p = R.quote(tk)[2], o = R.px(tk, R.day * MIN_DAY), c = (p / o - 1) * 100;
-    return `<tr data-t="${tk}" class="${tk === R.focus ? "sel" : ""}"><td>${tk}</td>` +
-      `<td>${fmt(p)}</td><td class="${c >= 0 ? "up" : "down"}">${sgn(c)}</td></tr>`;
-  }).join(""));
+    return `<tr data-t="${tk}" class="${tk === R.focus ? "sel" : ""}">${tkCell(tk)}` +
+      `<td>${fmt(p)}</td><td class="${c >= 0 ? "up" : "down"}">${sgn(c)}%</td></tr>`;
+  }).join("") : '<tr><td colspan="3" class="empty">Empty. Press w on any chart to watch it.</td></tr>');
 
-  const lad = R.ladder(), maxSz = Math.max(1, ...lad.map(l => l.sz || 0));
   const ladEl = $("#ladder");
   ladEl.classList.toggle("halted", !!hu);
-  setHTML(ladEl, R.blind ? '<div style="padding:14px;text-align:center" class="dim3">chart only</div>'
-    : lad.map(l => l.side === "mid"
-      ? `<div class="lrow mid"><span class="bq dim3">spread</span><span class="px">${fmt(l.px)}</span><span class="aq dim3">${fmt(l.spread)}</span></div>`
-      : `<div class="lrow" data-px="${l.px.toFixed(2)}" data-side="${l.side === "b" ? "buy" : "sell"}">` +
+  if (R.blind) setHTML(ladEl, '<div class="blindnote">Chart only. This run hides depth and prints, so read the candles.</div>');
+  else {
+    const full = R.ladder(), fit = Math.max(2, Math.min(6, Math.floor((ladEl.clientHeight - 26) / 42)));
+    const lad = full.slice(6 - fit, 7 + fit), maxSz = Math.max(1, ...lad.map(l => l.sz || 0));
+    const tick = lad.length > 1 ? Math.abs(lad[0].px - lad[1].px) || .01 : .01;
+    const mine = R.orders.filter(o => o.status === "working" && o.tk === R.focus && o.kind === "limit");
+    setHTML(ladEl, lad.map(l => {
+      if (l.side === "mid") return `<div class="lrow mid"><span class="bq">Spread</span><span class="px">${fmt(l.px)}</span><span class="aq">${fmt(l.spread)}</span></div>`;
+      const my = mine.filter(o => Math.abs(o.limit - l.px) < tick / 2 && (o.side === "buy") === (l.side === "b"))
+        .reduce((a, o) => a + o.qty, 0);
+      const me = my ? `<span class="me">you ${my}</span>` : "";
+      return `<div class="lrow${my ? " mine" : ""}" data-px="${l.px.toFixed(2)}" data-side="${l.side === "b" ? "buy" : "sell"}">` +
         `<span class="bar ${l.side}" style="width:${l.sz / maxSz * 100}%"></span>` +
-        `<span class="bq">${l.side === "b" ? Math.round(l.sz).toLocaleString() : ""}</span>` +
+        `<span class="bq">${l.side === "b" ? Math.round(l.sz).toLocaleString() : me}</span>` +
         `<span class="px">${fmt(l.px)}</span>` +
-        `<span class="aq">${l.side === "a" ? Math.round(l.sz).toLocaleString() : ""}</span></div>`).join(""));
+        `<span class="aq">${l.side === "a" ? Math.round(l.sz).toLocaleString() : me}</span></div>`;
+    }).join(""));
+  }
 
-  setHTML($("#tape"), R.blind ? '<div style="padding:14px;text-align:center" class="dim3">chart only</div>'
-    : R.tape(16).map(t => `<div class="r"><span class="dim3">${t[0]}</span>` +
-      `<span class="${t[3] === "A" ? "up" : "down"}">${fmt(t[1])}</span>` +
-      `<span>${t[2].toLocaleString()}</span><span>${t[3]}</span></div>`).join(""));
+  const tapeN = Math.max(1, Math.floor($("#tape").clientHeight / 21));
+  setHTML($("#tape"), R.blind ? '<div class="blindnote">No prints in a chart-only run.</div>'
+    : R.tape(tapeN).map(t => `<div class="r${t[2] >= 1000 ? " lot" : ""}"><span class="dim">${t[0]}</span>` +
+      `<span class="${t[3] === "A" ? "up" : "down"}">${fmt(t[1])}</span><span>${t[2].toLocaleString()}</span></div>`).join(""));
 
   const ps = Object.values(R.pos).filter(p => p.q);
-  setHTML($("#pos tbody"), ps.length ? ps.map(p => {
-    const last = R.quote(p.tk)[2], pl = (last - p.avg) * p.q;
-    const pct = (last / p.avg - 1) * 100 * (p.q > 0 ? 1 : -1);
+  let openTot = 0;
+  const prow = ps.map(p => {
+    const last = R.quote(p.tk)[2], pl = (last - p.avg) * p.q, pct = (last / p.avg - 1) * 100 * Math.sign(p.q);
+    openTot += pl;
     const k = pl >= 0 ? "up" : "down";
-    return `<tr data-t="${p.tk}"><td>${p.tk}</td><td class="${p.q > 0 ? "up" : "down"}">${p.q}</td>` +
-      `<td class="dim">${fmt(p.avg)}</td><td>${fmt(last)}</td>` +
-      `<td class="${k}">${sgn(pl)}</td><td class="${k}">${sgn(pct)}%</td></tr>`;
-  }).join("") : '<tr><td colspan="6" class="dim3" style="text-align:center;padding:14px">flat</td></tr>');
+    return `<tr data-t="${p.tk}" class="${p.tk === R.focus ? "sel" : ""}"><td class="tk">${p.tk}</td><td>${p.q > 0 ? "+" : "−"}${Math.abs(p.q)}</td>` +
+      `<td>${fmt(p.avg)}</td><td>${fmt(last)}</td><td class="${k}">${sgn(pl)}</td><td class="${k}">${sgn(pct)}%</td></tr>`;
+  });
+  if (ps.length > 1) prow.push(`<tr class="tot"><td class="l">Total</td><td></td><td></td><td></td><td class="${openTot >= 0 ? "up" : "down"}">${sgn(openTot)}</td><td></td></tr>`);
+  setHTML($("#pos tbody"), prow.length ? prow.join("")
+    : '<tr><td colspan="6" class="empty">Flat. Press b to buy or s to sell short at market.</td></tr>');
+  const realToday = R.fills.filter(f => f.day === R.day).reduce((a, f) => a + f.realized, 0);
+  setHTML($("#posTot"), `Realized today <b class="mono ${realToday > 0 ? "up" : realToday < 0 ? "down" : ""}">${sgn(realToday)}</b>`);
 
   const work = R.orders.filter(o => o.status === "working");
-  const bl = work.map(o => `<tr data-cancel="${o.id}"><td>${o.tk}</td>` +
-    `<td class="${o.side === "buy" ? "up" : "down"}">${o.side}</td><td>${o.qty}</td>` +
-    `<td>${fmt(o.limit || o.stop)}</td><td class="dim3">${o.kind} · click to cancel</td></tr>`)
-    .concat(R.fills.slice(-14).reverse().map(f => `<tr><td>${f.tk}</td>` +
-      `<td class="${f.side === "buy" ? "up" : "down"}">${f.side}</td><td>${f.qty}</td>` +
-      `<td>${fmt(f.px)}</td><td class="dim3">filled</td></tr>`));
+  const bl = work.map(o => `<tr data-cancel="${o.id}" title="Click to cancel"><td class="tk">${o.tk}</td>` +
+    `<td class="l">${o.side === "buy" ? "Buy" : "Sell"}</td><td>${o.qty}</td>` +
+    `<td>${fmt(o.limit || o.stop)}</td><td class="l">${o.kind === "stop" ? "Stop" : "Limit"}${o.oco ? ", bracket" : ""}</td><td class="l">Cancel</td></tr>`)
+    .concat(R.fills.slice(-16).reverse().map(f => `<tr data-t="${f.tk}"><td class="tk">${f.tk}</td>` +
+      `<td class="l">${f.side === "buy" ? "Buy" : "Sell"}</td><td>${f.qty}</td>` +
+      `<td>${fmt(f.px)}</td><td class="l dim">Filled${f.why && f.why !== "market" ? ", " + f.why : ""}</td>` +
+      `<td class="${f.realized > 0 ? "up" : f.realized < 0 ? "down" : "dim"}">${f.realized ? sgn(f.realized) : "—"}</td></tr>`));
   setHTML($("#blot tbody"), bl.length ? bl.join("")
-    : '<tr><td colspan="5" class="dim3" style="text-align:center;padding:14px">no orders yet</td></tr>');
+    : '<tr><td colspan="6" class="empty">No orders yet. Resting orders wait here until they fill or you cancel them.</td></tr>');
 
   renderFeed();
   drawChart(); drawEquity();
 }
 
-/* ---------------- modals ---------------- */
 function paintMods() {
   $("#modGrid").innerHTML = Object.entries(MODS).map(([k, g]) => {
     const sel = g.opts.find(o => o[0] === picks[k]) || g.opts[0];
-    return `<div class="mod"><span class="lab">${g.label}</span><div class="opts">` +
-      g.opts.map(o => `<button class="opt ${o[0] === picks[k] ? "on" : ""}" data-k="${k}" data-o="${o[0]}">` +
-        `${o[1]}${o[3] !== 1 ? `<em>${o[3]}×</em>` : ""}</button>`).join("") +
+    return `<div class="mod"><span class="lab">${g.label}</span><div class="seg" role="radiogroup" aria-label="${g.label}">` +
+      g.opts.map(o => `<b role="radio" tabindex="0" aria-checked="${o[0] === picks[k]}" class="${o[0] === picks[k] ? "on" : ""}" data-k="${k}" data-o="${o[0]}">` +
+        `${o[1]}${o[3] !== 1 ? `<em>×${o[3]}</em>` : ""}</b>`).join("") +
       `</div><span class="hint">${sel[2]}</span></div>`;
   }).join("");
   const m = multOf(picks);
-  $("#multVal").textContent = m.toFixed(2) + "×";
+  $("#multVal").textContent = "×" + m.toFixed(2);
+  const cash = parseFloat(picks.cash), lev = parseFloat(picks.leverage), days = parseInt(picks.days);
+  const rent = Math.max(15, Math.round(.006 * cash));
+  const kv = [["You start with", "$" + fmt(cash, 0)], ["Buying power", "$" + fmt(cash * lev, 0)],
+    ["Sessions", days], ["Rent each close", `$${fmt(rent, 0)}`], ["Rent over the run", "$" + fmt(rent * days, 0)],
+    ["Day trades", picks.pdt === "off" || cash >= PDT_FLOOR ? "No limit" : "3 per 5 sessions"]];
+  $("#setupKv").innerHTML = kv.map(([k, v]) => `<div><span>${k}</span><span>${v}</span></div>`).join("");
+  $("#setupEx").innerHTML = `Finish <b>$${fmt(cash * .05, 0)}</b> up with a worst drawdown of <b>$${fmt(cash * .02, 0)}</b> and you score ` +
+    `400 × ${m.toFixed(2)} = <b>${fmt(400 * m, 0)}</b>. Lose that much instead and it is <b>${fmt(-600 * m, 0)}</b>.`;
   let hardest = 1;
   for (const k in MODS) hardest *= Math.max(...MODS[k].opts.map(o => o[3]));
-  const bs = bestScore();
-  $("#multTxt").innerHTML = "Score = (profit &minus; half your worst drawdown) as a share of starting " +
-    `cash, times the multiplier. Hardest possible is ${hardest.toFixed(2)}×.` +
-    (bs !== null ? ` Your best is <b style="color:var(--ink)">${fmt(bs, 0)}</b>.` : "");
+  const bs = bestScore(m);
+  $("#multTxt").innerHTML = "Your score is profit less half your worst drawdown, per $10,000 started with, " +
+    `times this multiplier. The hardest setup pays ×${hardest.toFixed(2)}.` +
+    (bs !== null ? ` Your best at ×${m.toFixed(2)} is <b>${fmt(bs, 0)}</b>.` : "");
 }
-$("#modGrid").onclick = e => {
-  const b = e.target.closest("[data-k]");
+function pickMod(b) {
   if (!b) return;
   picks[b.dataset.k] = b.dataset.o;
   paintMods();
+  const again = $(`#modGrid [data-k="${b.dataset.k}"][data-o="${b.dataset.o}"]`);
+  if (again) again.focus();
+}
+$("#modGrid").onclick = e => pickMod(e.target.closest("[data-k]"));
+$("#modGrid").onkeydown = e => {
+  if (e.key === "Enter" || e.key === " ") { e.preventDefault(); pickMod(e.target.closest("[data-k]")); }
 };
+
+function closeAll() {
+  ["#setup", "#modal", "#perkModal", "#records", "#help"].forEach(s => $(s).classList.remove("show"));
+  $("#settingsPop").classList.remove("show");
+  railOn("rTerm");
+}
+function railOn(id) { document.querySelectorAll(".ri[id^=r]").forEach(b => b.classList.toggle("on", b.id === id)); }
+function anyModal() { return ["#setup", "#modal", "#perkModal", "#records", "#help"].some(s => $(s).classList.contains("show")); }
 
 function openSetup() {
   for (const k in MODS) if (!(k in picks)) picks[k] = MODS[k].def;
   paintMods();
   const ds = todaySeed();
   const done = scores().some(s => s.daily && s.seed === ds);
-  $("#dailyNote").textContent = done ? "already played today — you can replay it" :
-    "same market for everyone today · 5 sessions";
+  $("#dailyNote").textContent = done ? "You played today's already. Replays do not change the first score."
+    : "Five sessions on one market everyone gets today, standard rules.";
+  $("#howto").style.display = scores().length ? "none" : "";
   const sv = loadSave();
   $("#resumeBox").style.display = sv ? "flex" : "none";
   if (sv) {
     const mk = parseMods(sv.mk), c = sv.curve || [];
     const sess = Math.min(c.length, parseInt(mk.days));
-    $("#resumeTxt").innerHTML = `Saved run <b>${sv.seed}</b> · ${modLabel(mk)} · session ` +
-      `<b>${sess}</b> of <b>${mk.days}</b> · equity <b>$${fmt(c[c.length - 1], 0)}</b>`;
+    $("#resumeTxt").innerHTML = `Run <b>${sv.seed}</b> is saved after session <b>${sess - 1}</b> of <b>${mk.days}</b> ` +
+      `with <b>$${fmt(c[c.length - 1], 0)}</b>. ${modLabel(mk)}.`;
   }
-  $("#modal").classList.remove("show");
-  $("#perkModal").classList.remove("show");
+  closeAll();
+  railOn("rNew");
   $("#setup").classList.add("show");
+  setTimeout(() => (sv ? $("#bResume") : $("#sStart")).focus(), 30);
 }
 $("#bResume").onclick = () => {
   const sv = loadSave();
-  if (!sv) { toast("no saved run", "bad"); $("#resumeBox").style.display = "none"; return; }
+  if (!sv) { toast("There is no saved run", "bad"); $("#resumeBox").style.display = "none"; return; }
   R = Run.restore(sv);
+  R.speed = speedPref;
   prevVals = {}; hover = null; zoomN = R.viewBars;
-  $("#setup").classList.remove("show");
+  closeAll();
   render();
   if (R.pendingPerks) showPerks();
 };
 $("#bDiscard").onclick = () => {
   clearSave();
   $("#resumeBox").style.display = "none";
-  toast("saved run discarded");
+  toast("Saved run discarded");
 };
 
 function startRun(seed, modKeys, daily) {
+  if (R && !R.finished && R.session > 0 && !anyModal() && !confirm("Leave the run in progress? It stays saved from its last close.")) return;
   $("#boot").style.display = "flex";
-  $("#boot").textContent = "building market…";
   setTimeout(() => {
     const s = (seed === "" || seed === null || seed === undefined || isNaN(+seed))
       ? (Math.floor(Math.random() * 1e6) >>> 0) : (+seed >>> 0);
     R = new Run(s, modKeys, daily);
+    R.speed = speedPref;
     prevVals = {}; hover = null; zoomN = R.viewBars;
-    $("#setup").classList.remove("show");
-    $("#modal").classList.remove("show");
+    closeAll();
     $("#boot").style.display = "none";
     render();
   }, 30);
@@ -2056,55 +2426,73 @@ $("#bDaily").onclick = () => startRun(todaySeed(),
     pdt: "on", blind: "off", halts: "on" }, true);
 
 function showPerks() {
-  const list = R.pendingPerks;
-  $("#perkTitle").textContent = `Session ${R.session} complete`;
-  const eq = R.equity();
-  $("#perkSub").innerHTML = `Equity <b class="mono">$${fmt(eq)}</b> · ` +
-    `${eq >= R.cash0 ? '<span class="up">' : '<span class="down">'}${sgn(eq - R.cash0)}</span> on the run. ` +
-    `Pick one. It lasts the rest of the run.`;
-  const rc = R.sess[R.sess.length - 1] || R.recapOf(R.day - 1);
+  const list = R.pendingPerks, n = R.sess.length;
+  $("#perkTitle").textContent = `Session ${n} of ${R.days} closed`;
+  const eq = R.equity(), run = eq - R.cash0;
+  $("#perkSub").innerHTML = `You have <b>$${fmt(eq)}</b>, <span class="${run >= 0 ? "up" : "down"}">${sgn(run)}</span> on the run ` +
+    `with ${R.days - n} session${R.days - n === 1 ? "" : "s"} to go.`;
+  const rc = R.sess[n - 1] || R.recapOf(R.day - 1);
   const pl = rc.pl === undefined ? 0 : rc.pl;
   $("#rPl").textContent = sgn(pl);
-  $("#rPl").className = "v " + (pl >= 0 ? "up" : "down");
+  $("#rPl").className = "v " + (pl > 0 ? "up" : pl < 0 ? "down" : "");
   $("#rTr").textContent = rc.rt;
-  $("#rWin").textContent = rc.rt ? Math.round(rc.wins / rc.rt * 100) + "%" : "—";
+  $("#rWin").textContent = rc.rt ? `${rc.wins} of ${rc.rt}` : "—";
   $("#rBw").innerHTML = rc.best
-    ? `<span class="up">${sgn(rc.best.realized)}</span> <span class="dim3">/</span> ` +
-      `<span class="down">${sgn(rc.worst.realized)}</span>`
-    : "—";
-  $("#perkGrid").innerHTML = (list || []).map(p =>
-    `<button class="perk" data-perk="${p.id}"><span class="pn">${p.n}</span><span class="pd">${p.d}</span></button>`).join("");
+    ? `<span class="${rc.best.realized >= 0 ? "up" : "down"}">${sgn(rc.best.realized, 0)}</span> / ` +
+      `<span class="${rc.worst.realized >= 0 ? "up" : "down"}">${sgn(rc.worst.realized, 0)}</span>` : "—";
+  $("#rFee").textContent = "−" + fmt((rc.fees || 0) + (rc.burn || 0));
+  $("#perkHead").style.display = list ? "" : "none";
+  $("#perkGrid").innerHTML = (list || []).map((p, i) =>
+    `<button class="perk" data-perk="${p.id}"><span class="pn">${p.n}</span><span class="pd">${p.d}</span><kbd>${i + 1}</kbd></button>`).join("");
   $("#perkGrid").style.display = list ? "" : "none";
   $("#recapRow").style.display = list ? "none" : "";
+  const nxt = R.upcoming(40).filter(e => e.day === n + 1);
+  const heldNext = nxt.filter(e => e.held).map(e => e.tk);
+  let streak = 0;
+  for (let i = R.sess.length - 1; i >= 0 && R.sess[i].pl > 0; i--) streak++;
+  const streakTxt = streak >= 2 ? `That is ${streak} green sessions in a row. ` : "";
+  $("#recapNext").innerHTML = streakTxt + (heldNext.length ? `You hold <b>${heldNext.join(", ")}</b> into earnings at tomorrow's open.`
+    : nxt.length ? `${nxt.length} of the big names report at tomorrow's open.` : "");
   $("#perkModal").classList.add("show");
+  requestAnimationFrame(() => drawSession($("#sessEq"), n));
+  if (!list) setTimeout(() => $("#bContinue").focus(), 30);
 }
 $("#bContinue").onclick = () => { $("#perkModal").classList.remove("show"); render(); };
+function takePerk(id) {
+  R.takePerk(id);
+  saveRun(R);
+  $("#perkModal").classList.remove("show");
+  toast(`${PERK_BY[id].n} is yours for the rest of the run`, "good");
+  render();
+}
 $("#perkGrid").onclick = e => {
   const b = e.target.closest("[data-perk]");
-  if (!b) return;
-  R.takePerk(b.dataset.perk);
-  $("#perkModal").classList.remove("show");
-  render();
+  if (b) takePerk(b.dataset.perk);
 };
 
+function ordinal(n) { const s = ["th", "st", "nd", "rd"], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); }
 function showEnd() {
-  const sc = R.score(), eq = R.equity(), bs = bestScore();
-  const beat = bs !== null && sc >= bs;
-  $("#mTitle").textContent = beat ? "New high score" : "Run complete";
+  const sc = R.score(), eq = R.equity(), prev = R.prevBest === undefined ? bestScore() : R.prevBest;
+  const beat = prev === null || sc > prev;
+  const all = scores();
+  $("#mTitle").textContent = all.length === 1 ? "Your first run is on the board"
+    : beat ? "A new best" : `Your ${ordinal(R.rank || all.length)} best of ${all.length} runs`;
   $("#mScore").textContent = fmt(sc, 0);
-  $("#mScore").className = "big " + (sc >= 0 ? "up" : "down");
-  $("#mSub").textContent = `Seed ${R.seed} · ${modLabel(R.mk)} · ${R.mult}×` +
-    (R.perks.size ? ` · perks: ${[...R.perks].map(p => PERK_BY[p].n).join(", ")}` : "");
-  $("#mEq").textContent = fmt(eq);
+  if (beat && all.length > 1) SND.best();
+  $("#mScore").className = "big " + (sc > 0 ? "up" : sc < 0 ? "down" : "");
+  $("#mSub").textContent = `Seed ${R.seed}, ${modLabel(R.mk)}, ×${R.mult.toFixed(2)}` +
+    (R.perks.size ? `. Perks: ${[...R.perks].map(p => PERK_BY[p].n).join(", ")}.` : ".") +
+    (!beat && prev !== null ? ` Your best is ${fmt(prev, 0)}.` : "");
+  $("#mEq").textContent = "$" + fmt(eq);
   const ret = (eq / R.cash0 - 1) * 100;
   $("#mRet").textContent = sgn(ret) + "%";
-  $("#mRet").className = "v " + (ret >= 0 ? "up" : "down");
-  $("#mDd").textContent = fmt(R.maxDD);
+  $("#mRet").className = "v " + (ret > 0 ? "up" : ret < 0 ? "down" : "");
+  $("#mDd").textContent = "$" + fmt(R.maxDD);
   $("#mTr").textContent = R.fills.length;
-  $("#mLb").innerHTML = scores().slice(0, 12).map((r, i) =>
-    `<div class="r ${r.seed === R.seed ? "me" : ""}"><span>${i + 1}</span>` +
-    `<span>${r.daily ? "daily · " : ""}${r.label}</span><span>${r.mult}×</span>` +
-    `<span>${fmt(r.score, 0)}</span></div>`).join("") || '<div class="dim3">no runs yet</div>';
+  $("#mLb").innerHTML = all.slice(0, 6).map((r, i) =>
+    `<div class="r ${r.at && r.at === R.at ? "me" : ""}" data-i="${i}"><span>${i + 1}</span>` +
+    `<span>${r.daily ? "Daily, " : ""}${r.label}</span><span>×${r.mult.toFixed(2)}</span>` +
+    `<span class="${r.score > 0 ? "up" : r.score < 0 ? "down" : ""}">${fmt(r.score, 0)}</span></div>`).join("");
   $("#mShare").textContent = R.card();
   $("#modal").classList.add("show");
 }
@@ -2113,56 +2501,111 @@ $("#mNew").onclick = openSetup;
 $("#mCopy").onclick = () => copyText(R.card());
 $("#mReview").onclick = () => {
   $("#modal").classList.remove("show");
-  enterReview(R.curve.length - 1);
+  enterReview(R.sess.length || 1);
 };
+function replay(rec) { if (rec) startRun(String(rec.seed), rec.mk, false); }
 $("#mLb").onclick = e => {
-  const row = e.target.closest(".r");
-  if (!row) return;
-  const rec = scores()[[...$("#mLb").children].indexOf(row)];
-  if (rec) startRun(String(rec.seed), rec.mk, false);
+  const row = e.target.closest("[data-i]");
+  if (row) replay(scores()[+row.dataset.i]);
 };
 
-/* ---------------- review ---------------- */
-function enterReview(i) {
-  const sess = Math.max(0, Math.min(R.curve.length - 1, Math.round(i)));
+function openRecords() {
+  const all = scores();
+  closeAll();
+  railOn("rRecords");
+  const n = all.length, wins = all.filter(r => r.score > 0).length;
+  const daily = all.filter(r => r.daily).length;
+  const avgRet = n ? all.reduce((a, r) => a + (r.equity / (r.cash0 || parseFloat((r.mk || {}).cash) || 10000) - 1) * 100, 0) / n : null;
+  $("#recStats").style.setProperty("--n", 4);
+  $("#recStats").innerHTML =
+    `<div><span class="k">Runs kept</span><span class="v">${n}</span></div>` +
+    `<div><span class="k">Best score</span><span class="v">${n ? fmt(all[0].score, 0) : "—"}</span></div>` +
+    `<div><span class="k">Runs that scored above zero</span><span class="v">${n ? `${wins} of ${n}` : "—"}</span></div>` +
+    `<div><span class="k">Average return</span><span class="v ${avgRet > 0 ? "up" : avgRet < 0 ? "down" : ""}">${avgRet === null ? "—" : sgn(avgRet) + "%"}</span></div>`;
+  $("#recTbl").innerHTML = n ? all.map((r, i) => {
+    const c0 = r.cash0 || parseFloat((r.mk || {}).cash) || 10000, ret = (r.equity / c0 - 1) * 100;
+    const when = r.at ? new Date(r.at).toISOString().slice(0, 10) : "—";
+    return `<tr data-i="${i}"><td>${i + 1}</td><td class="${r.score > 0 ? "up" : r.score < 0 ? "down" : ""}">${fmt(r.score, 0)}</td>` +
+      `<td>${sgn(ret)}%</td><td>$${fmt(r.maxdd)}</td><td>×${r.mult.toFixed(2)}</td>` +
+      `<td class="l mods">${r.daily ? "Daily, " : ""}${r.label}</td><td>${r.seed}</td><td>${when}</td></tr>`;
+  }).join("") : '<tr><td colspan="8" class="empty">No finished runs yet. Your forty best are kept here.</td></tr>';
+  $("#records").classList.add("show");
+}
+$("#recTbl").onclick = e => {
+  const row = e.target.closest("[data-i]");
+  if (row) replay(scores()[+row.dataset.i]);
+};
+$("#recClose").onclick = closeAll;
+$("#helpClose").onclick = closeAll;
+function openHelp() { closeAll(); railOn("rKeys"); $("#help").classList.add("show"); }
+$("#rTerm").onclick = closeAll;
+$("#rRecords").onclick = openRecords;
+$("#rNew").onclick = openSetup;
+$("#rKeys").onclick = openHelp;
+$("#rSettings").onclick = e => {
+  e.stopPropagation();
+  const pop = $("#settingsPop"), show = !pop.classList.contains("show");
+  pop.classList.toggle("show", show);
+  $("#rSettings").classList.toggle("on", show);
+};
+document.addEventListener("mousedown", e => {
+  if (!e.target.closest("#settingsPop") && !e.target.closest("#rSettings")) {
+    $("#settingsPop").classList.remove("show"); $("#rSettings").classList.remove("on");
+  }
+});
+document.querySelectorAll(".modal").forEach(m => m.addEventListener("mousedown", e => {
+  if (e.target === m && m.id !== "perkModal" && !(m.id === "setup" && !R) && !(m.id === "modal")) closeAll();
+}));
+
+function enterReview(s) {
+  const done = R.sess.length, cur = Math.min(R.session + 1, R.days);
+  s = Math.max(1, Math.min(R.finished ? done : cur, Math.round(s)));
   R.playing = false;
   R.reviewMode = true;
-  R.reviewT = Math.min(R.t, (R.startDay + sess) * MIN_DAY + MIN_DAY - 1);
-  const rc = R.sess[sess - 1];
-  $("#reviewTxt").innerHTML = sess === 0 ? "before the first session"
-    : `session <b>${sess}</b> · P&L <span class="${rc && rc.pl >= 0 ? "up" : "down"}">` +
-      `${rc ? sgn(rc.pl) : "—"}</span> · equity <b>$${fmt(R.curve[sess], 0)}</b>`;
+  R.reviewS = s;
+  R.reviewT = Math.min(R.t, (R.startDay + s - 1) * MIN_DAY + MIN_DAY - 1);
+  const rc = R.sess[s - 1];
+  $("#reviewTxt").innerHTML = rc
+    ? `Session <b>${s}</b> closed <span class="${rc.pl >= 0 ? "up" : "down"}">${sgn(rc.pl)}</span> at <b class="mono">$${fmt(rc.equity, 0)}</b>, ` +
+      `${rc.rt} round trip${rc.rt === 1 ? "" : "s"}. Your fills are marked on the chart.`
+    : `Session <b>${s}</b> so far. Your fills are marked on the chart.`;
   render();
 }
+
 function exitReview() {
   if (!R || !R.reviewMode) return;
-  R.reviewMode = false; R.reviewT = null;
+  R.reviewMode = false; R.reviewT = null; R.reviewS = null;
   render();
 }
 $("#bReviewOut").onclick = exitReview;
 $("#eq").addEventListener("mousedown", e => {
   if (!R || !eqGeom) return;
   const r = e.currentTarget.getBoundingClientRect();
-  const f = (e.clientX - r.left - eqGeom.pad) / eqGeom.W;
-  enterReview(f * (eqGeom.nPts - 1));
+  const f = (e.clientX - r.left - eqGeom.padL) / eqGeom.W;
+  enterReview(Math.floor(f * eqGeom.days) + 1);
 });
 
-/* ---------------- input ---------------- */
 function focusOn(tk) {
   tk = String(tk).toUpperCase();
   if (R && R.world.by[tk]) { R.focus = tk; hover = null; render(); }
 }
-$("#bPlay").onclick = () => { R.playing = !R.playing; render(); };
+let speedPref = [1, 4, 15, 60, 390].includes(PREFS.speed) ? PREFS.speed : 15;
+function togglePlay() { if (R && !R.finished) { R.playing = !R.playing; if (R.playing) exitReview(); } }
+$("#bPlay").onclick = () => { togglePlay(); render(); };
 $("#bStep").onclick = () => { if (R.step(1)) afterSession(); render(); };
-$("#bOpen").onclick = () => { R.forceOpen = !R.forceOpen; render(); };
-$("#bFlat").onclick = () => { R.flatten(); render(); };
+function flattenAll() {
+  const err = R.flatten();
+  if (err) toast("Could not close everything. " + err[0].toUpperCase() + err.slice(1), "bad");
+}
+$("#bFlat").onclick = () => { flattenAll(); render(); };
 $("#bBuy").onclick = () => order("buy");
 $("#bSell").onclick = () => order("sell");
 const numIn = sel => { const v = parseFloat($(sel).value); return isFinite(v) && v > 0 ? v : 0; };
 function order(side, kind, px) {
+  if (R.reviewMode) { toast("You are reviewing a past session. Press esc to trade live.", "bad"); return; }
   const br = { stop: numIn("#tStop"), tgt: numIn("#tTgt") };
   const err = R.submit(R.focus, side, qty, kind, kind === "limit" ? px : 0, 0, br);
-  if (err) { R.say("rejected: " + err); toast(err, "bad"); }
+  if (err) { R.say("rejected: " + err); toast(err[0].toUpperCase() + err.slice(1), "bad"); }
   else { $("#tStop").value = ""; $("#tTgt").value = ""; }
   render();
 }
@@ -2176,30 +2619,36 @@ document.querySelectorAll("[data-bp]").forEach(b => b.onclick = () => {
 });
 $("#bSize").onclick = () => {
   const stop = numIn("#tStop"), risk = parseFloat($("#tRisk").value);
-  if (!stop) { toast("set a stop first", "bad"); return; }
-  if (!(risk > 0)) { toast("risk must be a percent above zero", "bad"); return; }
+  if (!stop) { toast("Type a stop price first, then size to it", "bad"); return; }
+  if (!(risk > 0)) { toast("Risk is a percent of equity above zero", "bad"); return; }
   const last = R.quote(R.focus)[2], per = Math.abs(last - stop);
-  if (per < .005) { toast("stop is too close to the price", "bad"); return; }
+  if (per < .005) { toast("That stop is too close to the price to size from", "bad"); return; }
   setQty(Math.max(1, Math.floor(R.equity() * risk / 100 / per)));
+  toast(`${fmt(qty, 0)} shares risks ${risk}% if the stop at ${fmt(stop)} fills`);
   render();
 };
-document.querySelectorAll("[data-speed]").forEach(b => b.onclick = () => {
-  document.querySelectorAll("[data-speed]").forEach(x => x.classList.remove("on"));
-  b.classList.add("on"); R.speed = +b.dataset.speed; render();
-});
+$("#speeds").onclick = e => {
+  const b = e.target.closest("[data-speed]"); if (!b || !R) return;
+  R.speed = speedPref = +b.dataset.speed; PREFS.speed = speedPref; savePrefs(); render();
+};
 $("#tfs").onclick = e => {
   const b = e.target.closest("[data-tf]");
-  if (b) { R.tf = +b.dataset.tf; PREFS.tf = R.tf; savePrefs(); render(); return; }
-  if (e.target.closest("[data-vwap]")) { PREFS.vwap = !PREFS.vwap; savePrefs(); render(); }
+  if (b) { R.tf = +b.dataset.tf; PREFS.tf = R.tf; savePrefs(); render(); }
 };
-$("#bSound").onclick = () => { PREFS.sound = !PREFS.sound; savePrefs(); if (PREFS.sound) SND.bell(); render(); };
+$("#vwapSeg").onclick = () => { PREFS.vwap = !PREFS.vwap; savePrefs(); render(); };
+function toggleSound() { PREFS.sound = !PREFS.sound; savePrefs(); if (PREFS.sound) SND.bell(); render(); }
+$("#bSound").onclick = toggleSound;
+$("#swSound").onclick = toggleSound;
 document.querySelectorAll("[data-ap]").forEach(b => b.onclick = () => {
   PREFS.ap[b.dataset.ap] = !PREFS.ap[b.dataset.ap]; savePrefs(); render();
 });
 const setQty = v => { qty = Math.max(1, Math.floor(v)); $("#qty").value = qty; };
-$("#qUp").onclick = () => setQty(qty + 5);
-$("#qDn").onclick = () => setQty(qty - 5);
-$("#qty").onchange = e => setQty(parseInt(e.target.value) || 1);
+$("#qUp").onclick = () => { setQty(qty + 5); render(); };
+$("#qDn").onclick = () => { setQty(qty - 5); render(); };
+$("#qty").onchange = e => { setQty(parseInt(e.target.value) || 1); render(); };
+["#qty", "#tStop", "#tTgt", "#tRisk"].forEach(s => $(s).addEventListener("keydown", e => {
+  if (e.key === "Enter" || e.key === "Escape") e.target.blur();
+}));
 let hits = [], hitSel = 0;
 function searchSyms(q) {
   q = q.trim().toUpperCase();
@@ -2217,15 +2666,14 @@ function searchSyms(q) {
 function paintHits() {
   const el = $("#symRes");
   if (!hits.length) {
-    el.innerHTML = $("#symIn").value.trim()
-      ? '<div class="none">no symbol matches that</div>' : "";
+    el.innerHTML = $("#symIn").value.trim() ? '<div class="none">No symbol or company matches that</div>' : "";
     el.classList.toggle("show", !!$("#symIn").value.trim());
     return;
   }
   el.innerHTML = hits.map((s, i) =>
     `<div class="hit ${i === hitSel ? "on" : ""}" data-pick="${s.tk}">` +
     `<span class="tk">${s.tk}</span><span class="nm">${s.name}</span>` +
-    `<span class="sc">${s.kind === "stock" ? s.sector.split(" ")[0] : s.kind}</span></div>`).join("");
+    `<span class="sc">${s.kind === "stock" ? s.sector : "Fund"}</span></div>`).join("");
   el.classList.add("show");
 }
 function closeHits() { hits = []; hitSel = 0; $("#symRes").classList.remove("show"); }
@@ -2241,10 +2689,7 @@ $("#symIn").onkeydown = e => {
   if (e.key === "ArrowDown") { e.preventDefault(); hitSel = Math.min(hits.length - 1, hitSel + 1); paintHits(); }
   else if (e.key === "ArrowUp") { e.preventDefault(); hitSel = Math.max(0, hitSel - 1); paintHits(); }
   else if (e.key === "Escape") { e.target.value = ""; closeHits(); e.target.blur(); }
-  else if (e.key === "Enter") {
-    const tk = hits.length ? hits[hitSel].tk : e.target.value;
-    pickHit(tk);
-  }
+  else if (e.key === "Enter") pickHit(hits.length ? hits[hitSel].tk : e.target.value);
 };
 $("#symRes").onmousedown = e => {
   const h = e.target.closest("[data-pick]");
@@ -2262,8 +2707,6 @@ $("#feedTabs").onclick = e => {
   document.querySelectorAll("[data-feed]").forEach(x => x.classList.toggle("on", x === b));
   render();
 };
-/* mousedown, not click: these lists are rebuilt every frame, so the row under the
-   cursor is replaced between mousedown and mouseup and no click event ever fires. */
 function onPick(sel, fn) {
   $(sel).addEventListener("mousedown", e => {
     if (e.button !== 0) return;
@@ -2281,7 +2724,8 @@ onPick("#wl", pickSym);
 onPick("#pos", pickSym);
 onPick("#blot", e => {
   const n = e.target.closest("[data-cancel]");
-  return n ? () => { R.cancel(+n.dataset.cancel); render(); } : null;
+  if (n) return () => { R.cancel(+n.dataset.cancel); render(); };
+  return pickSym(e);
 });
 onPick("#ladder", e => {
   const n = e.target.closest("[data-px]");
@@ -2294,30 +2738,80 @@ chart.addEventListener("wheel", e => {
   R.viewBars = zoomN;
   render();
 }, { passive: false });
-chart.addEventListener("mousemove", e => {
-  const r = chart.getBoundingClientRect();
-  hover = { x: e.clientX - r.left, y: e.clientY - r.top };
+const chartXY = e => { const r = chart.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; };
+chart.addEventListener("mousedown", e => {
+  if (e.button !== 0 || !R || !geom) return;
+  const { x, y } = chartXY(e);
+  const near = geom.lines.find(l => Math.abs(l.y - y) < 6);
+  if (near && x >= near.xx && x <= near.xx + 22) { R.cancel(near.id); toast("Order cancelled"); render(); return; }
+  if (R.reviewMode) return;
+  if (near && x < geom.W) {
+    e.preventDefault();
+    drag = { id: near.id, y, px: Math.round(geom.price(y) * 100) / 100 };
+    drawChart();
+    return;
+  }
+  if (e.shiftKey && x < geom.W && y > geom.padT && y < geom.padT + geom.H) {
+    e.preventDefault();
+    const px = Math.round(geom.price(y) * 100) / 100;
+    order(px < R.quote(R.focus)[2] ? "buy" : "sell", "limit", px);
+  }
+});
+chart.addEventListener("mousemove", e => { hover = chartXY(e); if (!drag) drawChart(); });
+chart.addEventListener("mouseleave", () => { hover = null; if (!drag) drawChart(); });
+addEventListener("mousemove", e => {
+  if (!drag || !geom) return;
+  drag.y = Math.max(geom.padT, Math.min(geom.padT + geom.H, chartXY(e).y));
+  drag.px = Math.round(geom.price(drag.y) * 100) / 100;
   drawChart();
 });
-chart.addEventListener("mouseleave", () => { hover = null; drawChart(); });
-addEventListener("resize", () => { drawChart(); drawEquity(); });
+addEventListener("mouseup", () => {
+  if (!drag) return;
+  const d = drag; drag = null;
+  const err = R.amend(d.id, d.px);
+  if (err) toast(err[0].toUpperCase() + err.slice(1), "bad");
+  render();
+});
+addEventListener("resize", () => { if (R) { drawChart(); drawEquity(); } });
 
+function walkScanner(dir) {
+  if (!scanRows.length) return;
+  const i = scanRows.findIndex(r => r.tk === R.focus);
+  const j = i < 0 ? 0 : Math.max(0, Math.min(scanRows.length - 1, i + dir));
+  focusOn(scanRows[j].tk);
+}
 addEventListener("keydown", e => {
-  if (e.target.tagName === "INPUT") return;
-  if ($("#setup").classList.contains("show") || $("#modal").classList.contains("show")
-      || $("#perkModal").classList.contains("show")) return;
-  const k = e.key.toLowerCase();
-  if (k === "escape") { exitReview(); return; }
-  if (k === " ") { e.preventDefault(); R.playing = !R.playing; }
+  if (e.target.tagName === "INPUT" || e.metaKey || e.ctrlKey || e.altKey) return;
+  const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+  if ($("#perkModal").classList.contains("show")) {
+    const list = R.pendingPerks;
+    if (list && /^[1-3]$/.test(k) && list[+k - 1]) takePerk(list[+k - 1].id);
+    else if (!list && k === "Enter") { e.preventDefault(); $("#bContinue").click(); }
+    return;
+  }
+  if ($("#help").classList.contains("show") || $("#records").classList.contains("show")) {
+    if (k === "Escape" || k === "?") closeAll();
+    return;
+  }
+  if ($("#setup").classList.contains("show")) { if (k === "Escape" && R) closeAll(); return; }
+  if ($("#modal").classList.contains("show") || !R) return;
+  if (k === "Escape") { $("#settingsPop").classList.remove("show"); $("#rSettings").classList.remove("on"); exitReview(); return; }
+  if (k === "?") { openHelp(); return; }
+  if (e.target.closest && e.target.closest("button") && (k === " " || k === "Enter")) return;
+  if (k === " ") { e.preventDefault(); togglePlay(); }
   else if (k === "b") order("buy");
   else if (k === "s") order("sell");
-  else if (k === "f") R.flatten();
+  else if (k === "f") flattenAll();
+  else if (k === "x") { const err = R.closePos(R.focus); if (err) toast(err[0].toUpperCase() + err.slice(1), "bad"); }
+  else if (k === "c") { const n = R.cancelAll(); toast(n ? `Cancelled ${n} order${n === 1 ? "" : "s"}` : "Nothing was working"); }
   else if (k === "n") { if (R.step(1)) afterSession(); }
-  else if (k === "o") R.forceOpen = !R.forceOpen;
+  else if (k === "v") { PREFS.vwap = !PREFS.vwap; savePrefs(); }
+  else if (/^[1-4]$/.test(k)) { R.tf = TFS[+k - 1]; PREFS.tf = R.tf; savePrefs(); }
+  else if (k === "ArrowDown" || k === "ArrowUp") { e.preventDefault(); walkScanner(k === "ArrowDown" ? 1 : -1); return; }
   else if (k === "w") {
     const i = watch.indexOf(R.focus);
-    if (i >= 0) { watch.splice(i, 1); toast(R.focus + " dropped"); }
-    else { watch.unshift(R.focus); toast(R.focus + " watched", "good"); }
+    if (i >= 0) { watch.splice(i, 1); toast(`${R.focus} dropped from the watchlist`); }
+    else { watch.unshift(R.focus); toast(`${R.focus} added to the watchlist`, "good"); }
     saveWatch();
   }
   else if (k === "/") { e.preventDefault(); $("#symIn").focus(); return; }
@@ -2327,23 +2821,25 @@ addEventListener("keydown", e => {
   render();
 });
 
-/* ---------------- native shell bridge ---------------- */
 window.tapeMenu = id => {
   const acts = {
     new: openSetup,
     mods: openSetup,
     resume: () => { openSetup(); $("#bResume").click(); },
-    playpause: () => { if (R && !R.finished) { R.playing = !R.playing; render(); } },
-    flatten: () => { if (R) { R.flatten(); render(); } },
+    records: openRecords,
+    keys: openHelp,
+    playpause: () => { togglePlay(); render(); },
+    flatten: () => { if (R) { flattenAll(); render(); } },
     share: () => { if (R) copyText(R.card()); },
     vwap: () => { PREFS.vwap = !PREFS.vwap; savePrefs(); render(); },
-    sound: () => { PREFS.sound = !PREFS.sound; savePrefs(); render(); },
+    sound: toggleSound,
   };
   if (acts[id]) acts[id]();
 };
-window.tapeUpdate = v => toast(`update ${v} available — download from releases`, "good");
+window.tapeUpdate = v => toast(`Tape ${v} is out. Download it from the releases page.`, "good");
+$("#vSeed").onclick = () => { if (R) copyText(String(R.seed)); };
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { if (R) render(); });
 
-/* ---------------- clock ---------------- */
 function afterSession() {
   if (R.finished) showEnd();
   else if (R.pendingPerks || PREFS.ap.recap) showPerks();
@@ -2362,11 +2858,14 @@ function loop(now) {
       if (R.step(Math.min(whole, 400))) { afterSession(); render(); return; }
     }
   }
+  if (R.pauseMsg) {
+    if (R.pauseKind !== "fill") toast("Clock stopped. " + R.pauseMsg, R.pauseKind === "dd" || R.pauseKind === "halt" ? "bad" : "");
+    R.pauseMsg = null; carry = 0;
+  }
   if (now - lastPaint > 55) { lastPaint = now; render(); }
 }
 requestAnimationFrame(loop);
 
-/* ---------------- self test ---------------- */
 function selfTest() {
   const out = [], ok = (c, m) => out.push((c ? "PASS  " : "FAIL  ") + m);
   const w = new World(4242, "normal");
@@ -2495,6 +2994,30 @@ function selfTest() {
   r7.cancelAll();
   ok(r7.orders.every(o => o.status !== "working"), "cancel all clears the working orders");
 
+  const r8 = new Run(44, { days: "5" }, false);
+  r8.step(60);
+  ok(r8.eqPts.length === 13, `equity sampled every five minutes (${r8.eqPts.length} points after an hour)`);
+  const m8 = r8.quote("SPDY")[2];
+  r8.submit("SPDY", "buy", 3, "limit", Math.round(m8 * .98 * 100) / 100);
+  const lim8 = r8.orders.find(o => o.status === "working");
+  ok(r8.amend(lim8.id, m8 * .97) === null && Math.abs(lim8.limit - Math.round(m8 * .97 * 100) / 100) < 1e-9,
+     "a working limit can be dragged to a new price");
+  ok(/fill at once/.test(r8.amend(lim8.id, m8 * 1.05) || ""), "a buy limit dragged above the ask is refused");
+  r8.submit("SPDY", "buy", 4);
+  r8.step(10);
+  r8.submit("SPDY", "sell", 4);
+  const f8 = r8.fills[r8.fills.length - 1];
+  ok(f8.fee > 0 && f8.realized !== 0 && f8.why === "market", "a closing fill carries its fee, reason and realized P&L");
+  r8.playing = true; r8.pauseIf("news", "test");
+  ok(!r8.playing && r8.pauseKind === "news", "auto-pause stops the clock and says why");
+  r8.pauseMsg = null;
+  const t8 = r8.t; r8.step(30);
+  ok(r8.t === t8 + 30, "the clock runs full speed again once the pause is seen");
+  r8.step(MIN_DAY);
+  ok(r8.recapOf(r8.day - 1).fees > 0 && r8.sess.length === 1, "the session recap counts fees");
+  ok(r8.eqPts.some(p => p[0] === 1), "the close is sampled on the session boundary");
+  ok(r8.card().split("\n")[2].length <= 40, "the score card sparkline stays short");
+
   const vw = PREFS.vwap;
   window.tapeMenu("vwap");
   ok(PREFS.vwap !== vw, "the native menu reaches the frontend");
@@ -2511,7 +3034,9 @@ if (location.search.indexOf("selftest") >= 0) {
     `\n\n${res.filter(r => r.startsWith("PASS")).length} / ${res.length} passed</pre>`;
 } else {
   $("#boot").style.display = "none";
-  openSetup();
+  const qs = new URLSearchParams(location.search);
+  if (qs.has("seed")) startRun(qs.get("seed"), {}, false);
+  else openSetup();
 }
 </script>
 </body></html>

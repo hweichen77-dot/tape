@@ -28,6 +28,7 @@ fn build_menu<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
             &MenuItem::with_id(app, "new", "New Run", true, Some("CmdOrCtrl+N"))?,
             &MenuItem::with_id(app, "resume", "Resume Saved Run", true, Some("CmdOrCtrl+R"))?,
             &MenuItem::with_id(app, "mods", "Modifiers…", true, Some("CmdOrCtrl+,"))?,
+            &MenuItem::with_id(app, "records", "Records", true, Some("CmdOrCtrl+Shift+R"))?,
             &PredefinedMenuItem::separator(app)?,
             &MenuItem::with_id(app, "playpause", "Play / Pause", true, Some("CmdOrCtrl+P"))?,
             &MenuItem::with_id(app, "flatten", "Flatten All", true, Some("CmdOrCtrl+Shift+F"))?,
@@ -43,6 +44,7 @@ fn build_menu<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
         &[
             &MenuItem::with_id(app, "vwap", "Toggle VWAP", true, Some("CmdOrCtrl+Shift+V"))?,
             &MenuItem::with_id(app, "sound", "Toggle Sound", true, Some("CmdOrCtrl+Shift+S"))?,
+            &MenuItem::with_id(app, "keys", "Keyboard Shortcuts", true, Some("CmdOrCtrl+/"))?,
             &PredefinedMenuItem::separator(app)?,
             &PredefinedMenuItem::fullscreen(app, None)?,
         ],
@@ -81,10 +83,12 @@ fn build_menu<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
     )
 }
 
-const MENU_ACTION_IDS: [&str; 8] = [
+const MENU_ACTION_IDS: [&str; 10] = [
     "new",
     "resume",
     "mods",
+    "records",
+    "keys",
     "playpause",
     "flatten",
     "share",

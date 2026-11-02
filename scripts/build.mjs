@@ -1,4 +1,4 @@
-import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { cpSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -19,6 +19,7 @@ const body = src.slice(src.indexOf("<body>") + 6, src.indexOf("<script>"));
 rmSync(out, { recursive: true, force: true });
 mkdirSync(out, { recursive: true });
 writeFileSync(join(out, "app.css"), css.trim());
+cpSync(join(root, "src/fonts"), join(out, "fonts"), { recursive: true });
 writeFileSync(join(out, "app.js"), js.trim());
 writeFileSync(join(out, "index.html"), `<!doctype html>
 <html lang="en"><head>${head}<link rel="stylesheet" href="app.css">
