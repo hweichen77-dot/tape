@@ -1,6 +1,6 @@
 [package]
 name = "tape"
-version = "2.2.0"
+version = "2.3.0"
 description = "Tape — day trading on a market that does not exist"
 edition = "2021"
 
