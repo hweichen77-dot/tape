@@ -22,6 +22,7 @@ Every price is a pure function of a seed and a minute, so the same seed always r
 - A session strip in the top bar with your fills and the earnings you hold into
 - Eight run modifiers, from ×0.29 to ×6.79, with a live preview of what each setup means
 - Roguelike perks every few sessions, and a recap of each session's equity, fees and rent
+- A Monte Carlo cone (`m`) that runs 400 random price paths from the chart's recent volatility and shades the 50% and 90% range of the next 30 bars
 - A run chart sampled every five minutes, raced against a ghost of your best run
 - Records of your forty best runs; click one to replay its market
 - A daily challenge seeded by the date, the same for everyone

@@ -445,6 +445,7 @@ flex-direction:column;gap:12px;text-align:center;padding:30px}
               <div class="ch-tools">
                 <div class="seg num" id="tfs"><b data-tf="1" class="on">1m</b><b data-tf="5">5m</b><b data-tf="15">15m</b><b data-tf="60">1h</b></div>
                 <div class="seg" id="vwapSeg"><b data-vwap>VWAP</b></div>
+                <div class="seg" id="coneSeg"><b data-cone title="Monte Carlo range of the next 30 bars">Cone</b></div>
                 <span class="zoom mono" id="cZoom">150 bars</span>
               </div>
             </div>
@@ -640,6 +641,7 @@ flex-direction:column;gap:12px;text-align:center;padding:30px}
     <div><span>Timeframe 1m, 5m, 15m, 1h</span><span><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd><kbd>4</kbd></span></div>
     <div><span>Rest a limit at a chart price</span><span><kbd>shift</kbd>click</span></div>
     <div><span>Toggle VWAP</span><span><kbd>v</kbd></span></div>
+    <div><span>Toggle Monte Carlo cone</span><span><kbd>m</kbd></span></div>
     <div><span>Move a working order</span><span>drag its line</span></div>
     <div><span>Leave review, close a panel</span><span><kbd>esc</kbd></span></div>
     <div><span>This list</span><span><kbd>?</kbd></span></div>
@@ -656,6 +658,26 @@ function mix32(x) {
 }
 function h2(a, b) { return mix32((mix32(a | 0) ^ Math.imul(b | 0, 0x9E3779B1)) >>> 0); }
 function u01(a, b) { return h2(a, b) * U32; }
+function gauss(seed, k) {
+  const u = Math.max(u01(seed, 2 * k), 1e-12), v = u01(seed, 2 * k + 1);
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+}
+const MC_PATHS = 400, MC_STEPS = 30, MC_Q = [.05, .25, .5, .75, .95];
+function mcCone(closes, steps, n, seed) {
+  const r = [];
+  for (let i = Math.max(1, closes.length - 120); i < closes.length; i++) r.push(Math.log(closes[i] / closes[i - 1]));
+  if (r.length < 5) return null;
+  const m = r.reduce((a, b) => a + b, 0) / r.length;
+  const sig = Math.sqrt(r.reduce((a, b) => a + (b - m) * (b - m), 0) / (r.length - 1));
+  const x0 = Math.log(closes[closes.length - 1]), drift = -sig * sig / 2;
+  const at = [];
+  for (let s = 0; s < steps; s++) at.push(new Float64Array(n));
+  for (let p = 0; p < n; p++) {
+    let x = x0;
+    for (let s = 0; s < steps; s++) { x += drift + sig * gauss(seed, p * steps + s); at[s][p] = x; }
+  }
+  return at.map(a => { a.sort(); return MC_Q.map(q => Math.exp(a[Math.min(n - 1, Math.floor(q * n))])); });
+}
 
 const OCT = 22, AMP = [], SCL = [];
 for (let j = 0; j <= OCT; j++) { AMP.push(Math.pow(2, j * 0.5)); SCL.push(1 / Math.pow(2, j)); }
@@ -1127,7 +1149,7 @@ const LS = {
 const SCORE_KEY = "tape.scores.v1", GHOST_KEY = "tape.ghost.v1";
 const SAVE_KEY = "tape.run.v2", PREF_KEY = "tape.prefs.v1", WATCH_KEY = "tape.watch.v1";
 const AP_DEF = { fill: true, halt: true, news: true, dd: false, recap: true };
-const PREFS = Object.assign({ sound: true, vwap: false, tf: 1 }, LS.get(PREF_KEY, {}));
+const PREFS = Object.assign({ sound: true, vwap: false, cone: false, tf: 1 }, LS.get(PREF_KEY, {}));
 PREFS.ap = Object.assign({}, AP_DEF, PREFS.ap || {});
 function savePrefs() { LS.set(PREF_KEY, PREFS); }
 
@@ -1888,8 +1910,13 @@ function drawChart() {
   let lo = Infinity, hi = -Infinity;
   for (const b of bars) { if (b[2] < lo) lo = b[2]; if (b[1] > hi) hi = b[1]; }
   const sp0 = (hi - lo) || hi * .01 || 1; lo -= sp0 * .1; hi += sp0 * .1;
+  const cone = PREFS.cone ? mcCone(bars.map(b => b[3]), MC_STEPS, MC_PATHS,
+    h2(R.world.by[R.focus].seed, snap.times[snap.times.length - 1] + snap.tf)) : null;
+  if (cone) {
+    for (const q of cone) { if (q[0] < lo) lo = q[0]; if (q[4] > hi) hi = q[4]; }
+  }
   const sp = hi - lo, Y = p => padT + (hi - p) / sp * H;
-  const bw = W / bars.length;
+  const Wb = cone ? Math.round(W * .8) : W, bw = Wb / bars.length;
   geom = { padT, padB, W, H, bw, price: y => hi - (y - padT) / H * sp, y: Y, lo, hi,
     times: snap.times, tf: snap.tf, bars, lines: [] };
 
@@ -1946,9 +1973,25 @@ function drawChart() {
     ctx.fillStyle = COL.vwap; ctx.font = `600 11px ${MONO}`; ctx.textAlign = "left";
     ctx.fillText("VWAP", 8, Y(vw[vw.length - 1]) - 9);
   }
+  if (cone) {
+    const cw = (W - Wb) / cone.length, cx = i => Wb + (i + 1) * cw, c0 = bars[bars.length - 1][3];
+    const band = (a, b, fill) => {
+      ctx.fillStyle = fill; ctx.beginPath(); ctx.moveTo(Wb, Y(c0));
+      for (let i = 0; i < cone.length; i++) ctx.lineTo(cx(i), Y(cone[i][b]));
+      for (let i = cone.length - 1; i >= 0; i--) ctx.lineTo(cx(i), Y(cone[i][a]));
+      ctx.closePath(); ctx.fill();
+    };
+    band(0, 4, "rgba(244,244,245,.07)");
+    band(1, 3, "rgba(244,244,245,.13)");
+    ctx.strokeStyle = COL.ink2; ctx.setLineDash([3, 3]); ctx.beginPath(); ctx.moveTo(Wb, Y(c0));
+    for (let i = 0; i < cone.length; i++) ctx.lineTo(cx(i), Y(cone[i][2]));
+    ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle = COL.ink2; ctx.font = `600 11px ${MONO}`; ctx.textAlign = "left";
+    ctx.fillText(`${MC_PATHS} paths, 50/90%`, Wb + 6, padT + 8);
+  }
 
   const t0 = snap.times[0], tEnd = snap.times[snap.times.length - 1] + snap.tf;
-  const xAt = t => Math.max(0, Math.min(W, (t - t0) / (tEnd - t0) * W));
+  const xAt = t => Math.max(0, Math.min(Wb, (t - t0) / (tEnd - t0) * Wb));
   for (const f of R.fills) {
     if (f.tk !== R.focus || f.t < t0 || f.t > tEnd) continue;
     const x = xAt(f.t), y = Y(f.px), up = f.side === "buy";
@@ -1991,7 +2034,7 @@ function drawChart() {
 
   if (drag) {
     tag(ctx, W + 2, drag.y, drag.px.toFixed(2), COL.ink, "#141416");
-  } else if (hover && hover.x < W && hover.x >= 0 && hover.y > padT && hover.y < padT + H) {
+  } else if (hover && hover.x < Wb && hover.x >= 0 && hover.y > padT && hover.y < padT + H) {
     const i = Math.max(0, Math.min(bars.length - 1, Math.floor(hover.x / bw)));
     const b = bars[i], cx = Math.round(i * bw + bw / 2) + .5;
     ctx.strokeStyle = "rgba(244,244,245,.45)"; ctx.setLineDash([3, 3]);
@@ -2233,6 +2276,7 @@ function render() {
   $("#cZoom").textContent = R.viewBars + " bars";
   document.querySelectorAll("[data-tf]").forEach(b => b.classList.toggle("on", +b.dataset.tf === R.tf));
   $("[data-vwap]").classList.toggle("on", !!PREFS.vwap);
+  $("[data-cone]").classList.toggle("on", !!PREFS.cone);
   $("#bSound").classList.toggle("muted", !PREFS.sound);
   $("#swSound").classList.toggle("on", !!PREFS.sound);
   document.querySelectorAll("[data-ap]").forEach(b => b.classList.toggle("on", !!PREFS.ap[b.dataset.ap]));
@@ -2636,6 +2680,7 @@ $("#tfs").onclick = e => {
   if (b) { R.tf = +b.dataset.tf; PREFS.tf = R.tf; savePrefs(); render(); }
 };
 $("#vwapSeg").onclick = () => { PREFS.vwap = !PREFS.vwap; savePrefs(); render(); };
+$("#coneSeg").onclick = () => { PREFS.cone = !PREFS.cone; savePrefs(); render(); };
 function toggleSound() { PREFS.sound = !PREFS.sound; savePrefs(); if (PREFS.sound) SND.bell(); render(); }
 $("#bSound").onclick = toggleSound;
 $("#swSound").onclick = toggleSound;
@@ -2806,6 +2851,7 @@ addEventListener("keydown", e => {
   else if (k === "c") { const n = R.cancelAll(); toast(n ? `Cancelled ${n} order${n === 1 ? "" : "s"}` : "Nothing was working"); }
   else if (k === "n") { if (R.step(1)) afterSession(); }
   else if (k === "v") { PREFS.vwap = !PREFS.vwap; savePrefs(); }
+  else if (k === "m") { PREFS.cone = !PREFS.cone; savePrefs(); }
   else if (/^[1-4]$/.test(k)) { R.tf = TFS[+k - 1]; PREFS.tf = R.tf; savePrefs(); }
   else if (k === "ArrowDown" || k === "ArrowUp") { e.preventDefault(); walkScanner(k === "ArrowDown" ? 1 : -1); return; }
   else if (k === "w") {
@@ -2902,6 +2948,11 @@ function selfTest() {
   ok([...B.h].every((h, i) => h >= Math.max(B.o[i], B.c[i]) - 1e-9), "high above body");
   ok([...B.l].every((l, i) => l <= Math.min(B.o[i], B.c[i]) + 1e-9), "low below body");
   ok([...w.bars("SPDY", w.nDays + 400).c].every(x => x > 0 && isFinite(x)), "generates past history");
+  const cc = [...w.bars("NVDN", 400).c], mc = mcCone(cc, MC_STEPS, MC_PATHS, 5), last = cc[cc.length - 1];
+  ok(mc.length === MC_STEPS && mc.every(q => q.every((x, i) => !i || x >= q[i - 1])), "Monte Carlo quantiles ordered");
+  ok(mcCone(cc, MC_STEPS, MC_PATHS, 5).every((q, i) => q.every((x, j) => x === mc[i][j])), "Monte Carlo cone reproducible");
+  ok(mc[MC_STEPS - 1][4] - mc[MC_STEPS - 1][0] > mc[0][4] - mc[0][0], "Monte Carlo cone widens with horizon");
+  ok(Math.abs(mc[MC_STEPS - 1][2] / last - 1) < .02, "Monte Carlo median stays near last price");
 
   const r = new Run(7, { days: "5" }, false);
   ok(r.equity() === 10000, "starts flat at cash");
