@@ -335,6 +335,8 @@ box-shadow:var(--shadow);z-index:65;padding:16px;display:none;flex-direction:col
 .sw i::after{content:"";position:absolute;left:2px;top:2px;width:14px;height:14px;border-radius:50%;background:var(--ink2);transition:transform .15s}
 .sw.on i{background:var(--ink)}
 .sw.on i::after{transform:translateX(12px);background:#141416}
+.pop.ind{width:260px;max-height:72vh;overflow-y:auto;bottom:auto}
+.sw span em{display:inline-block;width:10px;height:3px;border-radius:2px;margin-right:9px;vertical-align:middle}
 .pop hr{border:0;border-top:1px solid var(--border);margin:8px 0}
 
 .boot{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:var(--ground);z-index:80;color:var(--ink2);font-size:14px}
@@ -445,6 +447,7 @@ flex-direction:column;gap:12px;text-align:center;padding:30px}
               <div class="ch-tools">
                 <div class="seg num" id="tfs"><b data-tf="1" class="on">1m</b><b data-tf="5">5m</b><b data-tf="15">15m</b><b data-tf="60">1h</b></div>
                 <div class="seg" id="vwapSeg"><b data-vwap>VWAP</b></div>
+                <div class="seg" id="indSeg"><b data-indbtn>Indicators</b></div>
                 <div class="seg" id="coneSeg"><b data-cone title="Monte Carlo range of the next 30 bars">Cone</b></div>
                 <span class="zoom mono" id="cZoom">150 bars</span>
               </div>
@@ -542,6 +545,16 @@ flex-direction:column;gap:12px;text-align:center;padding:30px}
   </div>
   <hr>
   <div class="sw" id="swSound"><span>Sound</span><i></i></div>
+</div>
+
+<div class="pop ind" id="indPop" role="dialog" aria-label="Indicators">
+  <h3>On the price</h3>
+  <div class="sw" data-pref="vwap"><span><em style="background:#4a8ad6"></em>VWAP</span><i></i></div>
+  <div class="sw" data-pref="cone"><span><em style="background:#f4f4f5"></em>Monte Carlo cone</span><i></i></div>
+  <div id="indOver"></div>
+  <hr>
+  <h3>Below the chart</h3>
+  <div id="indPane"></div>
 </div>
 
 <div class="modal" id="setup"><div class="card setup" role="dialog" aria-labelledby="setupTitle">
@@ -642,6 +655,7 @@ flex-direction:column;gap:12px;text-align:center;padding:30px}
     <div><span>Rest a limit at a chart price</span><span><kbd>shift</kbd>click</span></div>
     <div><span>Toggle VWAP</span><span><kbd>v</kbd></span></div>
     <div><span>Toggle Monte Carlo cone</span><span><kbd>m</kbd></span></div>
+    <div><span>Indicators</span><span><kbd>i</kbd></span></div>
     <div><span>Move a working order</span><span>drag its line</span></div>
     <div><span>Leave review, close a panel</span><span><kbd>esc</kbd></span></div>
     <div><span>This list</span><span><kbd>?</kbd></span></div>
@@ -662,6 +676,302 @@ function gauss(seed, k) {
   const u = Math.max(u01(seed, 2 * k), 1e-12), v = u01(seed, 2 * k + 1);
   return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
 }
+function fromFirst(x, fn) {
+  const f = x.findIndex(v => isFinite(v));
+  return f < 0 ? x.map(() => NaN) : new Array(f).fill(NaN).concat(fn(x.slice(f)));
+}
+function sma(x, n) {
+  return fromFirst(x, y => {
+    const o = []; let t = 0;
+    for (let i = 0; i < y.length; i++) { t += y[i]; if (i >= n) t -= y[i - n]; o.push(i >= n - 1 ? t / n : NaN); }
+    return o;
+  });
+}
+function smooth(x, k, n) {
+  const o = []; let e = NaN, c = 0;
+  for (const v of x) {
+    if (isFinite(v)) { e = c ? e + k * (v - e) : v; c++; }
+    o.push(c >= n ? e : NaN);
+  }
+  return o;
+}
+const ema = (x, n) => smooth(x, 2 / (n + 1), n), wilder = (x, n) => smooth(x, 1 / n, n);
+function rollStd(x, n, m) {
+  return x.map((_, i) => {
+    if (i < n - 1 || !isFinite(m[i])) return NaN;
+    let t = 0; for (let j = i - n + 1; j <= i; j++) t += (x[j] - m[i]) ** 2;
+    return Math.sqrt(t / n);
+  });
+}
+function rollExt(x, n, f) { return x.map((_, i) => i < n - 1 ? NaN : f(...x.slice(i - n + 1, i + 1))); }
+function trueRange(r) {
+  return r.map((b, i) => i ? Math.max(b[1] - b[2], Math.abs(b[1] - r[i - 1][3]), Math.abs(b[2] - r[i - 1][3])) : b[1] - b[2]);
+}
+function rsi(c, n) {
+  const g = c.map((v, i) => i ? Math.max(0, v - c[i - 1]) : 0), l = c.map((v, i) => i ? Math.max(0, c[i - 1] - v) : 0);
+  const ag = wilder(g, n), al = wilder(l, n);
+  return ag.map((a, i) => i < n ? NaN : al[i] === 0 ? 100 : 100 - 100 / (1 + a / al[i]));
+}
+function psar(r, step = .02, mx = .2) {
+  const o = new Array(r.length).fill(NaN);
+  if (r.length < 3) return o;
+  let up = r[1][3] >= r[0][3], af = step, ep = up ? r[0][1] : r[0][2], sar = up ? r[0][2] : r[0][1];
+  for (let i = 1; i < r.length; i++) {
+    sar += af * (ep - sar);
+    const h = r[i][1], l = r[i][2], p1 = r[i - 1], p2 = r[Math.max(0, i - 2)];
+    if (up) {
+      sar = Math.min(sar, p1[2], p2[2]);
+      if (l < sar) { up = false; sar = ep; ep = l; af = step; }
+      else if (h > ep) { ep = h; af = Math.min(mx, af + step); }
+    } else {
+      sar = Math.max(sar, p1[1], p2[1]);
+      if (h > sar) { up = true; sar = ep; ep = h; af = step; }
+      else if (l < ep) { ep = l; af = Math.min(mx, af + step); }
+    }
+    o[i] = sar;
+  }
+  return o;
+}
+const closes = r => r.map(b => b[3]), highs = r => r.map(b => b[1]), lows = r => r.map(b => b[2]);
+const hl2 = r => r.map(b => (b[1] + b[2]) / 2), typical = r => r.map(b => (b[1] + b[2] + b[3]) / 3);
+const lag = (x, k) => x.map((_, i) => i >= k ? x[i - k] : NaN);
+const zip = (a, b, f) => a.map((v, i) => f(v, b[i]));
+const rollSum = (x, n) => sma(x, n).map(v => v * n);
+const roc = (c, n) => zip(c, lag(c, n), (a, b) => 100 * (a / b - 1));
+const midRange = (r, n) => zip(rollExt(highs(r), n, Math.max), rollExt(lows(r), n, Math.min), (a, b) => (a + b) / 2);
+const clv = b => b[1] > b[2] ? ((b[3] - b[2]) - (b[1] - b[3])) / (b[1] - b[2]) : 0;
+function wma(x, n) {
+  return fromFirst(x, y => y.map((_, i) => {
+    if (i < n - 1) return NaN;
+    let t = 0; for (let j = 0; j < n; j++) t += y[i - j] * (n - j);
+    return t / (n * (n + 1) / 2);
+  }));
+}
+function kama(c, n = 10, f = 2, sl = 30) {
+  const fs = 2 / (f + 1), ss = 2 / (sl + 1), o = [];
+  let k = NaN;
+  for (let i = 0; i < c.length; i++) {
+    if (i < n) { o.push(NaN); continue; }
+    let vol = 0; for (let j = i - n + 1; j <= i; j++) vol += Math.abs(c[j] - c[j - 1]);
+    const sc = ((vol ? Math.abs(c[i] - c[i - n]) / vol : 0) * (fs - ss) + ss) ** 2;
+    k = isFinite(k) ? k + sc * (c[i] - k) : c[i];
+    o.push(k);
+  }
+  return o;
+}
+function linreg(c, n) {
+  return c.map((_, i) => {
+    if (i < n - 1) return NaN;
+    let sx = 0, sy = 0, sxy = 0, sxx = 0;
+    for (let j = 0; j < n; j++) { const y = c[i - n + 1 + j]; sx += j; sy += y; sxy += j * y; sxx += j * j; }
+    const b = (n * sxy - sx * sy) / (n * sxx - sx * sx);
+    return (sy - b * sx) / n + b * (n - 1);
+  });
+}
+function supertrend(r, n, m) {
+  const a = wilder(trueRange(r), n), o = new Array(r.length).fill(NaN);
+  let fu = NaN, fl = NaN, up = true;
+  for (let i = 0; i < r.length; i++) {
+    if (!isFinite(a[i])) continue;
+    const mid = (r[i][1] + r[i][2]) / 2, pc = i ? r[i - 1][3] : r[i][3];
+    const bu = mid + m * a[i], bl = mid - m * a[i];
+    fu = !isFinite(fu) || bu < fu || pc > fu ? bu : fu;
+    fl = !isFinite(fl) || bl > fl || pc < fl ? bl : fl;
+    if (up && r[i][3] < fl) up = false; else if (!up && r[i][3] > fu) up = true;
+    o[i] = up ? fl : fu;
+  }
+  return o;
+}
+function dmi(r, n) {
+  const p = r.map((b, i) => { if (!i) return 0; const u = b[1] - r[i - 1][1], d = r[i - 1][2] - b[2]; return u > d && u > 0 ? u : 0; });
+  const m = r.map((b, i) => { if (!i) return 0; const u = b[1] - r[i - 1][1], d = r[i - 1][2] - b[2]; return d > u && d > 0 ? d : 0; });
+  const tr = wilder(trueRange(r), n), pdi = zip(wilder(p, n), tr, (a, t) => 100 * a / t), mdi = zip(wilder(m, n), tr, (a, t) => 100 * a / t);
+  const dx = zip(pdi, mdi, (a, b) => a + b ? 100 * Math.abs(a - b) / (a + b) : 0);
+  return [wilder(dx, n), pdi, mdi];
+}
+function aroon(r, n) {
+  const up = [], dn = [];
+  for (let i = 0; i < r.length; i++) {
+    if (i < n) { up.push(NaN); dn.push(NaN); continue; }
+    let hi = i - n, lo = i - n;
+    for (let j = i - n + 1; j <= i; j++) { if (r[j][1] >= r[hi][1]) hi = j; if (r[j][2] <= r[lo][2]) lo = j; }
+    up.push(100 * (n - (i - hi)) / n); dn.push(100 * (n - (i - lo)) / n);
+  }
+  return [up, dn];
+}
+function bands(c, n, k) {
+  const m = sma(c, n), sd = rollStd(c, n, m);
+  return [m, zip(m, sd, (a, b) => a + k * b), zip(m, sd, (a, b) => a - k * b), sd];
+}
+const IND = [
+  { id: "ema9", label: "EMA 9", kind: "over", warm: 40, cols: ["#5ec8f2"], calc: r => [ema(closes(r), 9)] },
+  { id: "ema21", label: "EMA 21", kind: "over", warm: 80, cols: ["#b18cff"], calc: r => [ema(closes(r), 21)] },
+  { id: "sma50", label: "SMA 50", kind: "over", warm: 50, cols: ["#f28cc4"], calc: r => [sma(closes(r), 50)] },
+  { id: "sma200", label: "SMA 200", kind: "over", warm: 200, cols: ["#d4d17a"], calc: r => [sma(closes(r), 200)] },
+  { id: "bb", label: "Bollinger 20, 2", kind: "over", band: true, warm: 20, cols: ["#4fd1c5"], calc: r => {
+    const c = closes(r), m = sma(c, 20), sd = rollStd(c, 20, m);
+    return [m, m.map((v, i) => v + 2 * sd[i]), m.map((v, i) => v - 2 * sd[i])];
+  } },
+  { id: "kc", label: "Keltner 20, 2", kind: "over", band: true, warm: 80, cols: ["#f78c6c"], calc: r => {
+    const m = ema(closes(r), 20), a = wilder(trueRange(r), 10);
+    return [m, m.map((v, i) => v + 2 * a[i]), m.map((v, i) => v - 2 * a[i])];
+  } },
+  { id: "dc", label: "Donchian 20", kind: "over", band: true, warm: 20, cols: ["#9ccc65"], calc: r => {
+    const hh = rollExt(r.map(b => b[1]), 20, Math.max), ll = rollExt(r.map(b => b[2]), 20, Math.min);
+    return [hh.map((v, i) => (v + ll[i]) / 2), hh, ll];
+  } },
+  { id: "psar", label: "Parabolic SAR", kind: "over", dots: true, warm: 40, cols: ["#f4f4f5"], calc: r => [psar(r)] },
+  { id: "wma20", label: "WMA 20", kind: "over", warm: 20, cols: ["#80deea"], calc: r => [wma(closes(r), 20)] },
+  { id: "hma20", label: "Hull MA 20", kind: "over", warm: 30, cols: ["#ffab91"], calc: r => {
+    const c = closes(r);
+    return [wma(zip(wma(c, 10), wma(c, 20), (a, b) => 2 * a - b), 4)];
+  } },
+  { id: "dema20", label: "DEMA 20", kind: "over", warm: 120, cols: ["#ce93d8"], calc: r => {
+    const e = ema(closes(r), 20);
+    return [zip(e, ema(e, 20), (a, b) => 2 * a - b)];
+  } },
+  { id: "tema20", label: "TEMA 20", kind: "over", warm: 160, cols: ["#a5d6a7"], calc: r => {
+    const e1 = ema(closes(r), 20), e2 = ema(e1, 20), e3 = ema(e2, 20);
+    return [e1.map((v, i) => 3 * v - 3 * e2[i] + e3[i])];
+  } },
+  { id: "vwma20", label: "VWMA 20", kind: "over", warm: 20, cols: ["#90caf9"], calc: r =>
+    [zip(rollSum(r.map(b => b[3] * b[4]), 20), rollSum(r.map(b => b[4]), 20), (a, b) => b ? a / b : NaN)] },
+  { id: "kama", label: "KAMA 10, 2, 30", kind: "over", warm: 80, cols: ["#fff59d"], calc: r => [kama(closes(r))] },
+  { id: "lsma", label: "Linear regression 50", kind: "over", warm: 50, cols: ["#b0bec5"], calc: r => [linreg(closes(r), 50)] },
+  { id: "env", label: "Envelopes 20, 2.5%", kind: "over", band: true, warm: 20, cols: ["#bcaaa4"], calc: r => {
+    const m = sma(closes(r), 20);
+    return [m, m.map(v => v * 1.025), m.map(v => v * .975)];
+  } },
+  { id: "ichi", label: "Ichimoku 9, 26, 52", kind: "over", warm: 110, cols: ["#5ec8f2", "#e5566f", "#44a282", "#f78c6c"], calc: r => {
+    const t = midRange(r, 9), k = midRange(r, 26);
+    return [t, k, lag(zip(t, k, (a, b) => (a + b) / 2), 26), lag(midRange(r, 52), 26)];
+  } },
+  { id: "st", label: "Supertrend 10, 3", kind: "over", warm: 60, cols: ["#ffd180"], calc: r => [supertrend(r, 10, 3)] },
+  { id: "rsi", label: "RSI 14", kind: "pane", warm: 60, cols: ["#b18cff"], fixed: [0, 100], guides: [30, 70],
+    calc: r => [rsi(closes(r), 14)] },
+  { id: "macd", label: "MACD 12, 26, 9", kind: "pane", hist: 2, warm: 120, cols: ["#5ec8f2", "#f28cc4"], guides: [0],
+    calc: r => {
+      const c = closes(r), f = ema(c, 12), sl = ema(c, 26), m = f.map((v, i) => v - sl[i]), sg = ema(m, 9);
+      return [m, sg, m.map((v, i) => v - sg[i])];
+    } },
+  { id: "stoch", label: "Stochastic 14, 3", kind: "pane", warm: 20, cols: ["#5ec8f2", "#f28cc4"], fixed: [0, 100], guides: [20, 80],
+    calc: r => {
+      const hh = rollExt(r.map(b => b[1]), 14, Math.max), ll = rollExt(r.map(b => b[2]), 14, Math.min);
+      const k = sma(r.map((b, i) => hh[i] > ll[i] ? 100 * (b[3] - ll[i]) / (hh[i] - ll[i]) : hh[i] === ll[i] ? 50 : NaN), 3);
+      return [k, sma(k, 3)];
+    } },
+  { id: "atr", label: "ATR 14", kind: "pane", warm: 60, cols: ["#4fd1c5"], calc: r => [wilder(trueRange(r), 14)] },
+  { id: "obv", label: "OBV", kind: "pane", warm: 0, cols: ["#9ccc65"], calc: r => {
+    let t = 0;
+    return [r.map((b, i) => (t += i ? Math.sign(b[3] - r[i - 1][3]) * b[4] : 0))];
+  } },
+  { id: "adx", label: "ADX / DMI 14", kind: "pane", warm: 120, cols: ["#f4f4f5", "#44a282", "#e5566f"], guides: [25], calc: r => dmi(r, 14) },
+  { id: "cci", label: "CCI 20", kind: "pane", warm: 20, cols: ["#ffab91"], guides: [-100, 0, 100], calc: r => {
+    const t = typical(r), m = sma(t, 20);
+    return [t.map((v, i) => {
+      if (!isFinite(m[i])) return NaN;
+      let md = 0; for (let j = i - 19; j <= i; j++) md += Math.abs(t[j] - m[i]);
+      md /= 20;
+      return md ? (v - m[i]) / (.015 * md) : 0;
+    })];
+  } },
+  { id: "willr", label: "Williams %R 14", kind: "pane", warm: 14, cols: ["#80deea"], fixed: [-100, 0], guides: [-80, -20], calc: r => {
+    const hh = rollExt(highs(r), 14, Math.max), ll = rollExt(lows(r), 14, Math.min);
+    return [r.map((b, i) => hh[i] > ll[i] ? -100 * (hh[i] - b[3]) / (hh[i] - ll[i]) : isFinite(hh[i]) ? -50 : NaN)];
+  } },
+  { id: "stochrsi", label: "Stoch RSI 14, 14, 3, 3", kind: "pane", warm: 80, cols: ["#5ec8f2", "#f28cc4"], fixed: [0, 100], guides: [20, 80], calc: r => {
+    const v = rsi(closes(r), 14), hh = rollExt(v, 14, Math.max), ll = rollExt(v, 14, Math.min);
+    const k = sma(v.map((x, i) => !isFinite(hh[i]) ? NaN : hh[i] > ll[i] ? 100 * (x - ll[i]) / (hh[i] - ll[i]) : 50), 3);
+    return [k, sma(k, 3)];
+  } },
+  { id: "mfi", label: "MFI 14", kind: "pane", warm: 14, cols: ["#a5d6a7"], fixed: [0, 100], guides: [20, 80], calc: r => {
+    const t = typical(r), mf = t.map((v, i) => v * r[i][4]);
+    const ps = rollSum(t.map((v, i) => i && v > t[i - 1] ? mf[i] : 0), 14), ns = rollSum(t.map((v, i) => i && v < t[i - 1] ? mf[i] : 0), 14);
+    return [zip(ps, ns, (a, b) => b ? 100 - 100 / (1 + a / b) : 100)];
+  } },
+  { id: "cmo", label: "Chande momentum 14", kind: "pane", warm: 14, cols: ["#ce93d8"], fixed: [-100, 100], guides: [-50, 0, 50], calc: r => {
+    const c = closes(r), su = rollSum(c.map((v, i) => i ? Math.max(0, v - c[i - 1]) : 0), 14), sd = rollSum(c.map((v, i) => i ? Math.max(0, c[i - 1] - v) : 0), 14);
+    return [zip(su, sd, (a, b) => a + b ? 100 * (a - b) / (a + b) : 0)];
+  } },
+  { id: "uo", label: "Ultimate oscillator 7, 14, 28", kind: "pane", warm: 28, cols: ["#fff59d"], fixed: [0, 100], guides: [30, 70], calc: r => {
+    const bp = r.map((b, i) => b[3] - Math.min(b[2], i ? r[i - 1][3] : b[2])), tr = trueRange(r);
+    const av = n => zip(rollSum(bp, n), rollSum(tr, n), (a, b) => b ? a / b : 0), a7 = av(7), a14 = av(14), a28 = av(28);
+    return [a7.map((v, i) => 100 * (4 * v + 2 * a14[i] + a28[i]) / 7)];
+  } },
+  { id: "aroon", label: "Aroon 25", kind: "pane", warm: 25, cols: ["#44a282", "#e5566f"], fixed: [0, 100], guides: [50], calc: r => aroon(r, 25) },
+  { id: "vortex", label: "Vortex 14", kind: "pane", warm: 14, cols: ["#44a282", "#e5566f"], guides: [1], calc: r => {
+    const tr = rollSum(trueRange(r), 14);
+    const vp = rollSum(r.map((b, i) => i ? Math.abs(b[1] - r[i - 1][2]) : 0), 14), vm = rollSum(r.map((b, i) => i ? Math.abs(b[2] - r[i - 1][1]) : 0), 14);
+    return [zip(vp, tr, (a, b) => a / b), zip(vm, tr, (a, b) => a / b)];
+  } },
+  { id: "roc", label: "Rate of change 12", kind: "pane", warm: 12, cols: ["#90caf9"], guides: [0], calc: r => [roc(closes(r), 12)] },
+  { id: "mom", label: "Momentum 10", kind: "pane", warm: 10, cols: ["#ffcc80"], guides: [0], calc: r => { const c = closes(r); return [zip(c, lag(c, 10), (a, b) => a - b)]; } },
+  { id: "trix", label: "TRIX 15", kind: "pane", warm: 120, cols: ["#80cbc4"], guides: [0], calc: r => {
+    const e = ema(ema(ema(closes(r), 15), 15), 15);
+    return [zip(e, lag(e, 1), (a, b) => 100 * (a / b - 1))];
+  } },
+  { id: "tsi", label: "True strength 25, 13", kind: "pane", warm: 120, cols: ["#b39ddb"], guides: [0], calc: r => {
+    const c = closes(r), m = c.map((v, i) => i ? v - c[i - 1] : 0);
+    return [zip(ema(ema(m, 25), 13), ema(ema(m.map(Math.abs), 25), 13), (a, b) => b ? 100 * a / b : 0)];
+  } },
+  { id: "ppo", label: "PPO 12, 26, 9", kind: "pane", hist: 2, warm: 120, cols: ["#5ec8f2", "#f28cc4"], guides: [0], calc: r => {
+    const c = closes(r), f = ema(c, 12), sl = ema(c, 26), m = zip(f, sl, (a, b) => 100 * (a - b) / b), sg = ema(m, 9);
+    return [m, sg, zip(m, sg, (a, b) => a - b)];
+  } },
+  { id: "ao", label: "Awesome oscillator", kind: "pane", hist: 0, warm: 34, cols: ["#a5d6a7"], guides: [0], calc: r => {
+    const m = hl2(r);
+    return [zip(sma(m, 5), sma(m, 34), (a, b) => a - b)];
+  } },
+  { id: "dpo", label: "Detrended price 20", kind: "pane", warm: 20, cols: ["#ffab91"], guides: [0], calc: r => {
+    const c = closes(r);
+    return [zip(lag(c, 11), sma(c, 20), (a, b) => a - b)];
+  } },
+  { id: "coppock", label: "Coppock curve", kind: "pane", warm: 30, cols: ["#e6ee9c"], guides: [0], calc: r => {
+    const c = closes(r);
+    return [wma(zip(roc(c, 14), roc(c, 11), (a, b) => a + b), 10)];
+  } },
+  { id: "elder", label: "Elder ray 13", kind: "pane", warm: 80, cols: ["#44a282", "#e5566f"], guides: [0], calc: r => {
+    const e = ema(closes(r), 13);
+    return [zip(highs(r), e, (a, b) => a - b), zip(lows(r), e, (a, b) => a - b)];
+  } },
+  { id: "adl", label: "Accumulation / distribution", kind: "pane", warm: 0, cols: ["#9ccc65"], calc: r => {
+    let t = 0;
+    return [r.map(b => (t += clv(b) * b[4]))];
+  } },
+  { id: "chosc", label: "Chaikin oscillator 3, 10", kind: "pane", warm: 60, cols: ["#4fd1c5"], guides: [0], calc: r => {
+    let t = 0;
+    const a = r.map(b => (t += clv(b) * b[4]));
+    return [zip(ema(a, 3), ema(a, 10), (x, y) => x - y)];
+  } },
+  { id: "cmf", label: "Chaikin money flow 20", kind: "pane", warm: 20, cols: ["#80deea"], guides: [0], calc: r =>
+    [zip(rollSum(r.map(b => clv(b) * b[4]), 20), rollSum(r.map(b => b[4]), 20), (a, b) => b ? a / b : 0)] },
+  { id: "force", label: "Force index 13", kind: "pane", warm: 80, cols: ["#ef9a9a"], guides: [0], calc: r =>
+    [ema(r.map((b, i) => i ? (b[3] - r[i - 1][3]) * b[4] : 0), 13)] },
+  { id: "eom", label: "Ease of movement 14", kind: "pane", warm: 14, cols: ["#c5e1a5"], guides: [0], calc: r => {
+    const m = hl2(r);
+    return [sma(r.map((b, i) => i && b[1] > b[2] && b[4] ? (m[i] - m[i - 1]) * (b[1] - b[2]) / (b[4] / 1e4) : 0), 14)];
+  } },
+  { id: "hv", label: "Historical volatility 20", kind: "pane", warm: 21, cols: ["#ffcc80"], calc: (r, tf = 1) => {
+    const c = closes(r), lr = c.map((v, i) => i ? Math.log(v / c[i - 1]) : NaN), m = sma(lr, 20);
+    return [rollStd(lr, 20, m).map(v => 100 * v * Math.sqrt(MIN_YR / tf))];
+  } },
+  { id: "chop", label: "Choppiness 14", kind: "pane", warm: 14, cols: ["#b0bec5"], fixed: [0, 100], guides: [38.2, 61.8], calc: r => {
+    const s = rollSum(trueRange(r), 14), hh = rollExt(highs(r), 14, Math.max), ll = rollExt(lows(r), 14, Math.min);
+    return [s.map((v, i) => hh[i] > ll[i] ? 100 * Math.log10(v / (hh[i] - ll[i])) / Math.log10(14) : NaN)];
+  } },
+  { id: "pctb", label: "Bollinger %B 20, 2", kind: "pane", warm: 20, cols: ["#4fd1c5"], guides: [0, 1], calc: r => {
+    const c = closes(r), [, u, l] = bands(c, 20, 2);
+    return [c.map((v, i) => u[i] > l[i] ? (v - l[i]) / (u[i] - l[i]) : .5)];
+  } },
+  { id: "bbw", label: "Bollinger width 20, 2", kind: "pane", warm: 20, cols: ["#4fd1c5"], calc: r => {
+    const [m, u, l] = bands(closes(r), 20, 2);
+    return [m.map((v, i) => 100 * (u[i] - l[i]) / v)];
+  } },
+  { id: "z", label: "Z-score 20", kind: "pane", warm: 20, cols: ["#f48fb1"], guides: [-2, 0, 2], calc: r => {
+    const c = closes(r), [m, , , sd] = bands(c, 20, 2);
+    return [c.map((v, i) => sd[i] ? (v - m[i]) / sd[i] : 0)];
+  } },
+];
 const MC_PATHS = 400, MC_STEPS = 30, MC_Q = [.05, .25, .5, .75, .95];
 function mcCone(closes, steps, n, seed) {
   const r = [];
@@ -1149,7 +1459,7 @@ const LS = {
 const SCORE_KEY = "tape.scores.v1", GHOST_KEY = "tape.ghost.v1";
 const SAVE_KEY = "tape.run.v2", PREF_KEY = "tape.prefs.v1", WATCH_KEY = "tape.watch.v1";
 const AP_DEF = { fill: true, halt: true, news: true, dd: false, recap: true };
-const PREFS = Object.assign({ sound: true, vwap: false, cone: false, tf: 1 }, LS.get(PREF_KEY, {}));
+const PREFS = Object.assign({ sound: true, vwap: false, cone: false, ind: {}, tf: 1 }, LS.get(PREF_KEY, {}));
 PREFS.ap = Object.assign({}, AP_DEF, PREFS.ap || {});
 function savePrefs() { LS.set(PREF_KEY, PREFS); }
 
@@ -1709,9 +2019,9 @@ class Run {
 
   viewT() { return Math.floor(this.reviewT === null ? this.t : this.reviewT); }
 
-  snapshot() {
+  snapshot(extra = 0) {
     const tf = TFS.indexOf(this.tf) >= 0 ? this.tf : 1;
-    const n = Math.max(10, this.viewBars);
+    const n = Math.max(10, this.viewBars) + extra;
     const now = this.viewT(), d = Math.floor(now / MIN_DAY);
     const m = Math.max(1, now - d * MIN_DAY);
     const perDay = Math.ceil(MIN_DAY / tf);
@@ -1899,14 +2209,45 @@ function tag(ctx, x, y, text, bg, fg, align) {
 }
 function hhmm(mi) { const m = 570 + ((mi % MIN_DAY) + MIN_DAY) % MIN_DAY; return pad2(Math.floor(m / 60)) + ":" + pad2(m % 60); }
 
-let drag = null;
+let drag = null, chartMemo = { key: "" };
+
+function chartData() {
+  const on = IND.filter(d => PREFS.ind[d.id]);
+  const key = [R.seed, R.focus, R.tf, R.viewT(), R.viewBars, on.map(d => d.id).join()].join("|");
+  if (chartMemo.r === R && chartMemo.key === key) return chartMemo.v;
+  const full = R.snapshot(on.reduce((a, d) => Math.max(a, d.warm), 0));
+  const off = Math.max(0, full.rows.length - Math.max(10, R.viewBars)), ind = {};
+  for (const d of on) ind[d.id] = d.calc(full.rows, full.tf).map(x => x.slice(off));
+  const v = { rows: full.rows.slice(off), times: full.times.slice(off), tf: full.tf, t0: full.times[off] || 0, ind };
+  chartMemo = { r: R, key, v };
+  return v;
+}
+function plot(ctx, s, X, Y, col, lw, dash) {
+  ctx.strokeStyle = col; ctx.lineWidth = lw; ctx.setLineDash(dash || []);
+  ctx.beginPath();
+  let pen = false;
+  for (let i = 0; i < s.length; i++) {
+    if (!isFinite(s[i])) { pen = false; continue; }
+    if (pen) ctx.lineTo(X(i), Y(s[i])); else ctx.moveTo(X(i), Y(s[i]));
+    pen = true;
+  }
+  ctx.stroke(); ctx.lineWidth = 1; ctx.setLineDash([]);
+}
+function fmtInd(v) {
+  if (!isFinite(v)) return "–";
+  const a = Math.abs(v);
+  return a >= 1e6 ? (v / 1e6).toFixed(2) + "M" : a >= 1e4 ? (v / 1e3).toFixed(1) + "k" : v.toFixed(2);
+}
 
 function drawChart() {
   const { ctx, w, h } = prep($("#chart"));
   if (!R) return;
-  const snap = R.snapshot(), bars = snap.rows;
+  const snap = chartData(), bars = snap.rows, ind = snap.ind;
   if (bars.length < 2) return;
-  const padR = 66, padT = 16, padB = 22, W = w - padR, H = h - padT - padB;
+  const panes = IND.filter(d => d.kind === "pane" && ind[d.id]), over = IND.filter(d => d.kind === "over" && ind[d.id]);
+  const padR = 66, padT = 16, padB = 22;
+  const PH = panes.length ? Math.max(26, Math.min(76, (h - padT - padB - 150) / panes.length)) : 0;
+  const W = w - padR, H = h - padT - padB - PH * panes.length, axY = padT + H + PH * panes.length;
   let lo = Infinity, hi = -Infinity;
   for (const b of bars) { if (b[2] < lo) lo = b[2]; if (b[1] > hi) hi = b[1]; }
   const sp0 = (hi - lo) || hi * .01 || 1; lo -= sp0 * .1; hi += sp0 * .1;
@@ -1936,13 +2277,13 @@ function drawChart() {
     const x = i * bw + bw / 2;
     if (newDay) {
       ctx.strokeStyle = "#34343a"; ctx.setLineDash([3, 3]);
-      ctx.beginPath(); ctx.moveTo(Math.round(i * bw) + .5, padT); ctx.lineTo(Math.round(i * bw) + .5, padT + H); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(Math.round(i * bw) + .5, padT); ctx.lineTo(Math.round(i * bw) + .5, axY); ctx.stroke();
       ctx.setLineDash([]);
     }
     if ((newDay || i % every === 0) && x - lastX > minGap * .8 && x > 24 && x < W - 24) {
       const s = Math.floor(t / MIN_DAY) - R.startDay + 1;
       ctx.fillStyle = COL.ink2;
-      ctx.fillText(newDay ? (s >= 1 ? `S${s} open` : "open") : hhmm(t), x, padT + H + padB / 2 + 1);
+      ctx.fillText(newDay ? (s >= 1 ? `S${s} open` : "open") : hhmm(t), x, axY + padB / 2 + 1);
       lastX = x;
     }
   }
@@ -1961,6 +2302,71 @@ function drawChart() {
     const bwid = Math.max(1, Math.min(bw * .72, 11)), x0 = cx - bwid / 2;
     ctx.fillStyle = col; ctx.fillRect(x0, t, bwid, Math.max(1, bo - t));
   }
+  const inMain = hover && hover.x >= 0 && hover.x < Wb && hover.y > padT && hover.y < padT + H;
+  const vi = inMain ? Math.max(0, Math.min(bars.length - 1, Math.floor(hover.x / bw))) : bars.length - 1;
+  const BX = i => i * bw + bw / 2;
+  if (over.length) {
+    ctx.save(); ctx.beginPath(); ctx.rect(0, padT, Wb, H); ctx.clip();
+    for (const d of over) {
+      const S = ind[d.id], col = d.cols[0];
+      if (d.band) {
+        ctx.fillStyle = col + "12"; ctx.beginPath();
+        let started = false;
+        for (let i = 0; i < bars.length; i++) if (isFinite(S[1][i])) { if (started) ctx.lineTo(BX(i), Y(S[1][i])); else { ctx.moveTo(BX(i), Y(S[1][i])); started = true; } }
+        for (let i = bars.length - 1; i >= 0; i--) if (isFinite(S[2][i])) ctx.lineTo(BX(i), Y(S[2][i]));
+        ctx.closePath(); ctx.fill();
+        plot(ctx, S[0], BX, Y, col, 1, [4, 3]); plot(ctx, S[1], BX, Y, col, 1.25); plot(ctx, S[2], BX, Y, col, 1.25);
+      } else if (d.dots) {
+        ctx.fillStyle = col;
+        for (let i = 0; i < bars.length; i++) if (isFinite(S[0][i])) { ctx.beginPath(); ctx.arc(BX(i), Y(S[0][i]), Math.max(1.2, Math.min(2.2, bw * .22)), 0, 7); ctx.fill(); }
+      } else S.forEach((x, j) => plot(ctx, x, BX, Y, d.cols[j] || col, 1.5));
+    }
+    ctx.restore();
+    ctx.font = `600 11px ${MONO}`; ctx.textAlign = "left"; ctx.textBaseline = "middle";
+    let lx = 8, ly = padT + 22;
+    for (const d of over) {
+      const S = ind[d.id], txt = `${d.label} ${d.band ? fmtInd(S[1][vi]) + " / " + fmtInd(S[2][vi]) : S.map(x => fmtInd(x[vi])).join(" ")}`;
+      const tw = ctx.measureText(txt).width;
+      if (lx > 8 && lx + tw > Wb - 8) { lx = 8; ly += 16; }
+      ctx.fillStyle = "rgba(19,18,23,.85)"; ctx.fillRect(lx - 4, ly - 8, tw + 8, 16);
+      ctx.fillStyle = d.cols[0]; ctx.fillText(txt, lx, ly);
+      lx += tw + 16;
+    }
+  }
+  panes.forEach((d, k) => {
+    const y0 = padT + H + k * PH, S = ind[d.id], top = y0 + 18, bot = y0 + PH - 4;
+    ctx.strokeStyle = "#34343a"; ctx.beginPath(); ctx.moveTo(0, Math.round(y0) + .5); ctx.lineTo(W, Math.round(y0) + .5); ctx.stroke();
+    let a = Infinity, b = -Infinity;
+    if (d.fixed) [a, b] = d.fixed;
+    else for (const s of S) for (const v of s) if (isFinite(v)) { if (v < a) a = v; if (v > b) b = v; }
+    ctx.font = `600 11px ${MONO}`; ctx.textAlign = "left"; ctx.textBaseline = "middle";
+    ctx.fillStyle = d.cols[0];
+    ctx.fillText(`${d.label}  ${S.filter((_, j) => j !== d.hist || S.length === 1).map(s => fmtInd(s[vi])).join("  ")}`, 8, y0 + 9);
+    if (!isFinite(a)) return;
+    if (a === b) { a -= 1; b += 1; }
+    const PY = v => bot - (v - a) / (b - a) * (bot - top);
+    ctx.font = `11px ${MONO}`; ctx.fillStyle = COL.ink2;
+    for (const g of (d.guides || [])) {
+      if (g < a || g > b) continue;
+      ctx.strokeStyle = COL.grid; ctx.setLineDash([3, 3]);
+      ctx.beginPath(); ctx.moveTo(0, Math.round(PY(g)) + .5); ctx.lineTo(W, Math.round(PY(g)) + .5); ctx.stroke(); ctx.setLineDash([]);
+      ctx.fillText(String(g), W + 9, PY(g));
+    }
+    if (!d.fixed) { ctx.fillText(fmtInd(b), W + 9, top); ctx.fillText(fmtInd(a), W + 9, bot); }
+    if (d.hist !== undefined) {
+      const z = PY(Math.max(a, Math.min(b, 0)));
+      for (let i = 0; i < bars.length; i++) {
+        const v = S[d.hist][i]; if (!isFinite(v)) continue;
+        ctx.fillStyle = v >= 0 ? "rgba(68,162,130,.55)" : "rgba(229,86,111,.55)";
+        const yv = PY(v); ctx.fillRect(i * bw + .5, Math.min(z, yv), Math.max(1, bw - 1), Math.max(1, Math.abs(yv - z)));
+      }
+    }
+    S.forEach((s, j) => { if (j !== d.hist) plot(ctx, s, BX, PY, d.cols[j] || d.cols[0], 1.25); });
+    if (inMain) {
+      ctx.strokeStyle = "rgba(244,244,245,.45)"; ctx.setLineDash([3, 3]);
+      ctx.beginPath(); ctx.moveTo(Math.round(BX(vi)) + .5, y0); ctx.lineTo(Math.round(BX(vi)) + .5, y0 + PH); ctx.stroke(); ctx.setLineDash([]);
+    }
+  });
   if (PREFS.vwap) {
     const vw = R.vwapOf(snap);
     ctx.strokeStyle = COL.vwap; ctx.lineWidth = 1.5;
@@ -2035,7 +2441,7 @@ function drawChart() {
   if (drag) {
     tag(ctx, W + 2, drag.y, drag.px.toFixed(2), COL.ink, "#141416");
   } else if (hover && hover.x < Wb && hover.x >= 0 && hover.y > padT && hover.y < padT + H) {
-    const i = Math.max(0, Math.min(bars.length - 1, Math.floor(hover.x / bw)));
+    const i = vi;
     const b = bars[i], cx = Math.round(i * bw + bw / 2) + .5;
     ctx.strokeStyle = "rgba(244,244,245,.45)"; ctx.setLineDash([3, 3]);
     ctx.beginPath(); ctx.moveTo(cx, padT); ctx.lineTo(cx, padT + H); ctx.stroke();
@@ -2044,8 +2450,8 @@ function drawChart() {
     tag(ctx, W + 2, hover.y, geom.price(hover.y).toFixed(2), COL.ink, "#141416");
     ctx.font = `600 11px ${MONO}`;
     const tl = hhmm(snap.times[i]), tw = ctx.measureText(tl).width + 12, tx = Math.min(W - tw, Math.max(0, cx - tw / 2));
-    ctx.fillStyle = COL.ink; ctx.fillRect(tx, padT + H + 2, tw, 18);
-    ctx.fillStyle = "#141416"; ctx.textAlign = "center"; ctx.fillText(tl, tx + tw / 2, padT + H + 11.5);
+    ctx.fillStyle = COL.ink; ctx.fillRect(tx, axY + 2, tw, 18);
+    ctx.fillStyle = "#141416"; ctx.textAlign = "center"; ctx.fillText(tl, tx + tw / 2, axY + 11.5);
     ctx.textAlign = "left"; ctx.font = `12px ${MONO}`;
     const up = b[3] >= b[0], parts = [["O", b[0]], ["H", b[1]], ["L", b[2]], ["C", b[3]]];
     ctx.fillStyle = "rgba(19,18,23,.92)"; ctx.fillRect(6, 4, 380, 22);
@@ -2277,6 +2683,11 @@ function render() {
   document.querySelectorAll("[data-tf]").forEach(b => b.classList.toggle("on", +b.dataset.tf === R.tf));
   $("[data-vwap]").classList.toggle("on", !!PREFS.vwap);
   $("[data-cone]").classList.toggle("on", !!PREFS.cone);
+  const nInd = IND.filter(d => PREFS.ind[d.id]).length;
+  $("[data-indbtn]").textContent = nInd ? `Indicators ${nInd}` : "Indicators";
+  $("[data-indbtn]").classList.toggle("on", nInd > 0);
+  document.querySelectorAll("#indPop [data-ind]").forEach(b => b.classList.toggle("on", !!PREFS.ind[b.dataset.ind]));
+  document.querySelectorAll("#indPop [data-pref]").forEach(b => b.classList.toggle("on", !!PREFS[b.dataset.pref]));
   $("#bSound").classList.toggle("muted", !PREFS.sound);
   $("#swSound").classList.toggle("on", !!PREFS.sound);
   document.querySelectorAll("[data-ap]").forEach(b => b.classList.toggle("on", !!PREFS.ap[b.dataset.ap]));
@@ -2593,6 +3004,7 @@ $("#rSettings").onclick = e => {
   $("#rSettings").classList.toggle("on", show);
 };
 document.addEventListener("mousedown", e => {
+  if (!e.target.closest("#indPop") && !e.target.closest("#indSeg")) $("#indPop").classList.remove("show");
   if (!e.target.closest("#settingsPop") && !e.target.closest("#rSettings")) {
     $("#settingsPop").classList.remove("show"); $("#rSettings").classList.remove("on");
   }
@@ -2681,6 +3093,23 @@ $("#tfs").onclick = e => {
 };
 $("#vwapSeg").onclick = () => { PREFS.vwap = !PREFS.vwap; savePrefs(); render(); };
 $("#coneSeg").onclick = () => { PREFS.cone = !PREFS.cone; savePrefs(); render(); };
+for (const kind of ["over", "pane"]) $(kind === "over" ? "#indOver" : "#indPane").innerHTML = IND.filter(d => d.kind === kind)
+  .map(d => `<div class="sw" data-ind="${d.id}"><span><em style="background:${d.cols[0]}"></em>${d.label}</span><i></i></div>`).join("");
+function toggleIndPop(show) {
+  const pop = $("#indPop"), r = $("[data-indbtn]").getBoundingClientRect();
+  show = show === undefined ? !pop.classList.contains("show") : show;
+  pop.style.top = r.bottom + 8 + "px";
+  pop.style.left = Math.max(8, Math.min(innerWidth - 268, r.right - 260)) + "px";
+  pop.classList.toggle("show", show);
+}
+$("#indSeg").onclick = e => { e.stopPropagation(); toggleIndPop(); };
+$("#indPop").onclick = e => {
+  const b = e.target.closest(".sw");
+  if (!b) return;
+  if (b.dataset.ind) PREFS.ind[b.dataset.ind] = !PREFS.ind[b.dataset.ind];
+  else PREFS[b.dataset.pref] = !PREFS[b.dataset.pref];
+  savePrefs(); render();
+};
 function toggleSound() { PREFS.sound = !PREFS.sound; savePrefs(); if (PREFS.sound) SND.bell(); render(); }
 $("#bSound").onclick = toggleSound;
 $("#swSound").onclick = toggleSound;
@@ -2840,7 +3269,7 @@ addEventListener("keydown", e => {
   }
   if ($("#setup").classList.contains("show")) { if (k === "Escape" && R) closeAll(); return; }
   if ($("#modal").classList.contains("show") || !R) return;
-  if (k === "Escape") { $("#settingsPop").classList.remove("show"); $("#rSettings").classList.remove("on"); exitReview(); return; }
+  if (k === "Escape") { $("#indPop").classList.remove("show"); $("#settingsPop").classList.remove("show"); $("#rSettings").classList.remove("on"); exitReview(); return; }
   if (k === "?") { openHelp(); return; }
   if (e.target.closest && e.target.closest("button") && (k === " " || k === "Enter")) return;
   if (k === " ") { e.preventDefault(); togglePlay(); }
@@ -2852,6 +3281,7 @@ addEventListener("keydown", e => {
   else if (k === "n") { if (R.step(1)) afterSession(); }
   else if (k === "v") { PREFS.vwap = !PREFS.vwap; savePrefs(); }
   else if (k === "m") { PREFS.cone = !PREFS.cone; savePrefs(); }
+  else if (k === "i") toggleIndPop();
   else if (/^[1-4]$/.test(k)) { R.tf = TFS[+k - 1]; PREFS.tf = R.tf; savePrefs(); }
   else if (k === "ArrowDown" || k === "ArrowUp") { e.preventDefault(); walkScanner(k === "ArrowDown" ? 1 : -1); return; }
   else if (k === "w") {
@@ -2953,6 +3383,19 @@ function selfTest() {
   ok(mcCone(cc, MC_STEPS, MC_PATHS, 5).every((q, i) => q.every((x, j) => x === mc[i][j])), "Monte Carlo cone reproducible");
   ok(mc[MC_STEPS - 1][4] - mc[MC_STEPS - 1][0] > mc[0][4] - mc[0][0], "Monte Carlo cone widens with horizon");
   ok(Math.abs(mc[MC_STEPS - 1][2] / last - 1) < .02, "Monte Carlo median stays near last price");
+  const flat = new Array(60).fill(50), ramp = flat.map((_, i) => 10 + i);
+  ok(sma(flat, 20)[59] === 50 && isNaN(sma(flat, 20)[18]) && sma(ramp, 3)[59] === 68, "SMA values and warmup");
+  ok(Math.abs(ema(flat, 9)[59] - 50) < 1e-9 && rsi(ramp, 14)[59] === 100, "EMA flat, RSI pinned on a straight climb");
+  const rows = [...w.bars("NVDN", 400).c].map((c, i, a) => [i ? a[i - 1] : c, Math.max(c, i ? a[i - 1] : c) + .1, Math.min(c, i ? a[i - 1] : c) - .1, c, 100]);
+  const bad = IND.filter(d => !d.calc(rows, 1).every(x => x.length === rows.length && isFinite(x[x.length - 1]))).map(d => d.id);
+  ok(!bad.length, `all ${IND.length} indicators finish finite ${bad.join(" ")}`);
+  const dm = IND.find(d => d.id === "adx").calc(rows, 1), ar = IND.find(d => d.id === "aroon").calc(rows, 1);
+  ok(dm.every(x => x.filter(isFinite).every(v => v >= 0 && v <= 100)) && ar.every(x => x.filter(isFinite).every(v => v >= 0 && v <= 100)), "ADX, DMI and Aroon stay in 0-100");
+  ok(Math.abs(linreg(ramp, 50)[59] - 69) < 1e-9 && Math.abs(wma(flat, 20)[59] - 50) < 1e-9, "linear regression tracks a line, WMA flat");
+  const rr = IND.find(d => d.id === "rsi").calc(rows)[0].filter(isFinite), st = IND.find(d => d.id === "stoch").calc(rows)[0].filter(isFinite);
+  ok(rr.every(v => v >= 0 && v <= 100) && st.every(v => v >= 0 && v <= 100), "RSI and stochastic stay in 0-100");
+  const bb = IND.find(d => d.id === "bb").calc(rows);
+  ok(bb[0].every((m, i) => !isFinite(m) || (bb[1][i] >= m && bb[2][i] <= m)), "Bollinger bands wrap the middle");
 
   const r = new Run(7, { days: "5" }, false);
   ok(r.equity() === 10000, "starts flat at cash");

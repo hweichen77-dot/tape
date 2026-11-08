@@ -22,6 +22,7 @@ Every price is a pure function of a seed and a minute, so the same seed always r
 - A session strip in the top bar with your fills and the earnings you hold into
 - Eight run modifiers, from ×0.29 to ×6.79, with a live preview of what each setup means
 - Roguelike perks every few sessions, and a recap of each session's equity, fees and rent
+- 51 indicators behind `i`, with warmup bars so values are right from the first visible candle. On the price: EMA, SMA, WMA, Hull, DEMA, TEMA, VWMA, KAMA, linear regression, Bollinger, Keltner, Donchian, envelopes, Ichimoku, Supertrend and Parabolic SAR. In panes below: RSI, MACD, stochastic, Stoch RSI, ADX/DMI, CCI, Williams %R, MFI, Chande momentum, ultimate oscillator, Aroon, Vortex, ROC, momentum, TRIX, TSI, PPO, awesome oscillator, DPO, Coppock, Elder ray, ATR, OBV, A/D line, Chaikin oscillator and money flow, force index, ease of movement, historical volatility, choppiness, Bollinger %B and width, and z-score
 - A Monte Carlo cone (`m`) that runs 400 random price paths from the chart's recent volatility and shades the 50% and 90% range of the next 30 bars
 - A run chart sampled every five minutes, raced against a ghost of your best run
 - Records of your forty best runs; click one to replay its market
