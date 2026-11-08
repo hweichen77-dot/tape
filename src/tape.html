@@ -187,6 +187,8 @@ canvas{display:block;width:100%;height:100%}
 .bs .b:hover{background:var(--upwash);border-color:var(--up)}
 .bs .s{color:var(--down);border-color:rgba(229,86,111,.6)}
 .bs .s:hover{background:var(--downwash);border-color:var(--down)}
+.bs button.idle{opacity:.4}
+.bs button kbd{font-size:11px}
 .tk-row{display:grid;grid-template-columns:44px 1fr auto auto;gap:6px;align-items:center}
 .tk-row label,.tk2 label{font-size:12px;color:var(--ink2)}
 .tk-row button{width:30px;padding:0}
@@ -470,8 +472,10 @@ flex-direction:column;gap:12px;text-align:center;padding:30px}
             <div class="ph"><h2>Order ticket</h2><span class="act" id="pdtNote"></span></div>
             <div class="ticket">
               <div class="bs">
-                <button class="b" id="bBuy">Buy <kbd>b</kbd></button>
-                <button class="s" id="bSell">Sell <kbd>s</kbd></button>
+                <button class="b" id="bBuy" title="Buy to open or add to a long">Buy <kbd>b</kbd></button>
+                <button class="s" id="bSell" title="Sell shares you own">Sell <kbd>s</kbd></button>
+                <button class="s" id="bShort" title="Sell short to open or add to a short">Short <kbd>⇧S</kbd></button>
+                <button class="b" id="bCover" title="Buy back shares you are short">Cover <kbd>⇧B</kbd></button>
               </div>
               <div class="tk-row">
                 <label for="qty">Shares</label><input id="qty" value="10" inputmode="numeric">
@@ -563,7 +567,7 @@ flex-direction:column;gap:12px;text-align:center;padding:30px}
     <p class="sub">A market of 6,200 companies that do not exist, built from a seed. Every setting moves your score multiplier. Nothing leaves this machine.</p>
     <ul class="howto" id="howto">
       <li><b>Find something moving.</b> The scanner ranks the 1,500 biggest names. Click a row, or press <kbd>/</kbd> and type a ticker.</li>
-      <li><b>Trade it.</b> <kbd>b</kbd> buys and <kbd>s</kbd> sells at market. Click the ladder or shift-click the chart to rest a limit.</li>
+      <li><b>Trade it.</b> <kbd>b</kbd> buys and <kbd>s</kbd> sells at market. <kbd>shift</kbd><kbd>s</kbd> sells short and <kbd>shift</kbd><kbd>b</kbd> covers. Click the ladder or shift-click the chart to rest a limit.</li>
       <li><b>Run the clock.</b> <kbd>space</kbd> plays and pauses. It stops on its own at every close and whenever something you hold moves.</li>
       <li><b>Last the run.</b> Rent comes out at every close. Under $25k you get three day trades per five sessions.</li>
     </ul>
@@ -640,17 +644,23 @@ flex-direction:column;gap:12px;text-align:center;padding:30px}
 <div class="modal" id="help"><div class="card help" role="dialog" aria-labelledby="helpTitle">
   <div class="row"><h2 id="helpTitle" class="grow">Keys</h2><button id="helpClose">Close <kbd>esc</kbd></button></div>
   <div class="keys">
-    <div><span>Play or pause</span><span><kbd>space</kbd></span></div>
     <div><span>Buy at market</span><span><kbd>b</kbd></span></div>
+    <div><span>Play or pause</span><span><kbd>space</kbd></span></div>
+    <div><span>Sell what you own</span><span><kbd>s</kbd></span></div>
     <div><span>Advance one minute</span><span><kbd>n</kbd></span></div>
-    <div><span>Sell at market</span><span><kbd>s</kbd></span></div>
-    <div><span>Close the charted position</span><span><kbd>x</kbd></span></div>
+    <div><span>Sell short</span><span><kbd>shift</kbd><kbd>s</kbd></span></div>
     <div><span>Find a symbol</span><span><kbd>/</kbd></span></div>
-    <div><span>Flatten everything</span><span><kbd>f</kbd></span></div>
-    <div><span>Walk the scanner</span><span><kbd>↑</kbd><kbd>↓</kbd></span></div>
-    <div><span>Cancel every working order</span><span><kbd>c</kbd></span></div>
+    <div><span>Buy to cover a short</span><span><kbd>shift</kbd><kbd>b</kbd></span></div>
+    <div><span>Walk the scanner</span><span><kbd>↑</kbd><kbd>↓</kbd> or <kbd>j</kbd><kbd>k</kbd></span></div>
+    <div><span>Close the charted position</span><span><kbd>x</kbd></span></div>
     <div><span>Watch or drop the symbol</span><span><kbd>w</kbd></span></div>
+    <div><span>Close half of it</span><span><kbd>shift</kbd><kbd>x</kbd></span></div>
+    <div><span>Size 25%, 50%, 100%, max</span><span><kbd>shift</kbd><kbd>1</kbd>–<kbd>4</kbd></span></div>
+    <div><span>Flatten everything</span><span><kbd>f</kbd></span></div>
     <div><span>Five shares fewer or more</span><span><kbd>[</kbd><kbd>]</kbd></span></div>
+    <div><span>Cancel every working order</span><span><kbd>c</kbd></span></div>
+    <div><span>Halve or double the shares</span><span><kbd>{</kbd><kbd>}</kbd></span></div>
+    <div><span>Leave a text box</span><span><kbd>esc</kbd> or <kbd>enter</kbd></span></div>
     <div><span>Timeframe 1m, 5m, 15m, 1h</span><span><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd><kbd>4</kbd></span></div>
     <div><span>Rest a limit at a chart price</span><span><kbd>shift</kbd>click</span></div>
     <div><span>Toggle VWAP</span><span><kbd>v</kbd></span></div>
@@ -1692,7 +1702,13 @@ class Run {
     for (const k in this.pos) if (this.pos[k].q) e += this.pos[k].q * this.quote(k)[2];
     return e;
   }
-  bp() { return Math.max(0, this.cash * (this.lev + (this.has("lev") ? 1 : 0))); }
+  gross() {
+    let g = 0;
+    for (const k in this.pos) if (this.pos[k].q) g += Math.abs(this.pos[k].q) * this.quote(k)[2];
+    return g;
+  }
+  bp() { return Math.max(0, this.equity() * (this.lev + (this.has("lev") ? 1 : 0)) - this.gross()); }
+  htb(tk) { return u01(this.world.by[tk].seed, 4242) < 0.12; }
   pdtLimit() { return PDT_LIMIT + (this.has("extra_dt") ? 1 : 0); }
   pdtUsed() { const lo = this.day - PDT_WINDOW; return this.dayTrades.filter(d => d > lo).length; }
   score() {
@@ -1728,11 +1744,11 @@ class Run {
     if (this.pdtOn && closing && p.openedDay === this.day && this.equity() < PDT_FLOOR
         && this.pdtUsed() >= this.pdtLimit())
       return `pattern day trader rule: ${this.pdtLimit()} day trades used in the last ${PDT_WINDOW} sessions`;
-    if (side === "sell" && !closing && !this.has("borrow")) {
-      if (u01(this.world.by[tk].seed, 4242) < 0.12) return `${tk} is hard to borrow, no shares available`;
-    }
-    if (side === "buy" && !closing) {
-      const need = qty * this.quote(tk)[1];
+    if (closing && qty > Math.abs(p.q))
+      return `that is more than the ${Math.abs(p.q)} you are ${p.q > 0 ? "long, sell" : "short, cover"} ${Math.abs(p.q)} to close first`;
+    if (side === "sell" && !closing && !this.has("borrow") && this.htb(tk)) return `${tk} is hard to borrow, no shares available`;
+    if (!closing) {
+      const need = qty * this.quote(tk)[side === "buy" ? 1 : 0];
       if (need > this.bp()) return `buying power $${fmt(this.bp(), 0)} short of $${fmt(need, 0)}`;
     }
     this.oid++;
@@ -2682,6 +2698,9 @@ function render() {
   $("#cZoom").textContent = R.viewBars + " bars";
   document.querySelectorAll("[data-tf]").forEach(b => b.classList.toggle("on", +b.dataset.tf === R.tf));
   $("[data-vwap]").classList.toggle("on", !!PREFS.vwap);
+  const hq = posQ();
+  $("#bBuy").classList.toggle("idle", hq < 0); $("#bSell").classList.toggle("idle", hq <= 0);
+  $("#bShort").classList.toggle("idle", hq > 0); $("#bCover").classList.toggle("idle", hq >= 0);
   $("[data-cone]").classList.toggle("on", !!PREFS.cone);
   const nInd = IND.filter(d => PREFS.ind[d.id]).length;
   $("[data-indbtn]").textContent = nInd ? `Indicators ${nInd}` : "Indicators";
@@ -2758,7 +2777,7 @@ function render() {
   });
   if (ps.length > 1) prow.push(`<tr class="tot"><td class="l">Total</td><td></td><td></td><td></td><td class="${openTot >= 0 ? "up" : "down"}">${sgn(openTot)}</td><td></td></tr>`);
   setHTML($("#pos tbody"), prow.length ? prow.join("")
-    : '<tr><td colspan="6" class="empty">Flat. Press b to buy or s to sell short at market.</td></tr>');
+    : '<tr><td colspan="6" class="empty">Flat. Press b to buy or shift+s to sell short at market.</td></tr>');
   const realToday = R.fills.filter(f => f.day === R.day).reduce((a, f) => a + f.realized, 0);
   setHTML($("#posTot"), `Realized today <b class="mono ${realToday > 0 ? "up" : realToday < 0 ? "down" : ""}">${sgn(realToday)}</b>`);
 
@@ -3056,11 +3075,26 @@ function flattenAll() {
 $("#bFlat").onclick = () => { flattenAll(); render(); };
 $("#bBuy").onclick = () => order("buy");
 $("#bSell").onclick = () => order("sell");
+$("#bShort").onclick = () => order("short");
+$("#bCover").onclick = () => order("cover");
 const numIn = sel => { const v = parseFloat($(sel).value); return isFinite(v) && v > 0 ? v : 0; };
-function order(side, kind, px) {
+const posQ = () => (R.pos[R.focus] && R.pos[R.focus].q) || 0;
+const actFor = side => side === "buy" ? (posQ() < 0 ? "cover" : "buy") : (posQ() > 0 ? "sell" : "short");
+function order(act, kind, px) {
   if (R.reviewMode) { toast("You are reviewing a past session. Press esc to trade live.", "bad"); return; }
-  const br = { stop: numIn("#tStop"), tgt: numIn("#tTgt") };
-  const err = R.submit(R.focus, side, qty, kind, kind === "limit" ? px : 0, 0, br);
+  const q0 = posQ(), tk = R.focus;
+  const no = {
+    buy: q0 < 0 && `You are short ${-q0} ${tk}. Cover with shift+b first.`,
+    sell: q0 <= 0 && (q0 < 0 ? `You are already short ${tk}. Press shift+s to add to it.` : `You own no ${tk}. Press shift+s to sell it short.`),
+    short: q0 > 0 && `You are long ${q0} ${tk}. Sell it with s before shorting.`,
+    cover: q0 >= 0 && `You are not short ${tk}.`,
+  }[act];
+  if (no) { toast(no, "bad"); render(); return; }
+  const side = act === "buy" || act === "cover" ? "buy" : "sell";
+  const n = act === "sell" || act === "cover" ? Math.min(qty, Math.abs(q0)) : qty;
+  const br = act === "buy" || act === "short" ? { stop: numIn("#tStop"), tgt: numIn("#tTgt") } : null;
+  const err = R.submit(tk, side, n, kind, kind === "limit" ? px : 0, 0, br);
+  if (!err && n < qty) toast(`${act === "sell" ? "Sold" : "Covered"} ${n}, all you had`);
   if (err) { R.say("rejected: " + err); toast(err[0].toUpperCase() + err.slice(1), "bad"); }
   else { $("#tStop").value = ""; $("#tTgt").value = ""; }
   render();
@@ -3203,7 +3237,7 @@ onPick("#blot", e => {
 });
 onPick("#ladder", e => {
   const n = e.target.closest("[data-px]");
-  return n ? () => order(n.dataset.side, "limit", +n.dataset.px) : null;
+  return n ? () => order(actFor(n.dataset.side), "limit", +n.dataset.px) : null;
 });
 const chart = $("#chart");
 chart.addEventListener("wheel", e => {
@@ -3228,7 +3262,7 @@ chart.addEventListener("mousedown", e => {
   if (e.shiftKey && x < geom.W && y > geom.padT && y < geom.padT + geom.H) {
     e.preventDefault();
     const px = Math.round(geom.price(y) * 100) / 100;
-    order(px < R.quote(R.focus)[2] ? "buy" : "sell", "limit", px);
+    order(actFor(px < R.quote(R.focus)[2] ? "buy" : "sell"), "limit", px);
   }
 });
 chart.addEventListener("mousemove", e => { hover = chartXY(e); if (!drag) drawChart(); });
@@ -3255,7 +3289,11 @@ function walkScanner(dir) {
   focusOn(scanRows[j].tk);
 }
 addEventListener("keydown", e => {
-  if (e.target.tagName === "INPUT" || e.metaKey || e.ctrlKey || e.altKey) return;
+  if (e.target.tagName === "INPUT") {
+    if ((e.key === "Escape" || e.key === "Enter") && e.target.id !== "symIn") e.target.blur();
+    return;
+  }
+  if (e.metaKey || e.ctrlKey || e.altKey) return;
   const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
   if ($("#perkModal").classList.contains("show")) {
     const list = R.pendingPerks;
@@ -3272,11 +3310,16 @@ addEventListener("keydown", e => {
   if (k === "Escape") { $("#indPop").classList.remove("show"); $("#settingsPop").classList.remove("show"); $("#rSettings").classList.remove("on"); exitReview(); return; }
   if (k === "?") { openHelp(); return; }
   if (e.target.closest && e.target.closest("button") && (k === " " || k === "Enter")) return;
+  const shift = e.shiftKey, digit = /^Digit[1-4]$/.test(e.code) ? +e.code[5] : 0;
   if (k === " ") { e.preventDefault(); togglePlay(); }
-  else if (k === "b") order("buy");
-  else if (k === "s") order("sell");
+  else if (k === "b") order(shift ? "cover" : "buy");
+  else if (k === "s") order(shift ? "short" : "sell");
+  else if (shift && digit) { const b = document.querySelectorAll("[data-bp]")[digit - 1]; if (b) b.click(); return; }
   else if (k === "f") flattenAll();
-  else if (k === "x") { const err = R.closePos(R.focus); if (err) toast(err[0].toUpperCase() + err.slice(1), "bad"); }
+  else if (k === "x") { const err = R.closePos(R.focus, shift ? .5 : 1); if (err) toast(err[0].toUpperCase() + err.slice(1), "bad"); }
+  else if (k === "{") setQty(Math.max(1, Math.floor(qty / 2)));
+  else if (k === "}") setQty(qty * 2);
+  else if (k === "j" || k === "k") { walkScanner(k === "j" ? 1 : -1); return; }
   else if (k === "c") { const n = R.cancelAll(); toast(n ? `Cancelled ${n} order${n === 1 ? "" : "s"}` : "Nothing was working"); }
   else if (k === "n") { if (R.step(1)) afterSession(); }
   else if (k === "v") { PREFS.vwap = !PREFS.vwap; savePrefs(); }
@@ -3406,6 +3449,18 @@ function selfTest() {
   ok(ab(r.quote("SPDY")[2] - snap.rows[snap.rows.length - 1][3]) < .011, "ticket matches newest candle");
   ok(r.submit("ZZZZ9", "buy", 1) !== null, "unknown symbol rejected");
   ok(r.submit("SPDY", "buy", 1e9) !== null, "buying power enforced");
+  const rs = new Run(21, { days: "5" }, false);
+  rs.step(60);
+  const sTk = ["SPDY", "NDQX", "DJIA", "RUSL", "XLTK"].find(t => !rs.htb(t));
+  const bp0 = rs.bp();
+  ok(rs.submit(sTk, "sell", 5) === null && rs.pos[sTk].q === -5, "short sale opens a short");
+  ok(rs.bp() < bp0, "shorting uses buying power instead of adding to it");
+  ok(/buying power/.test(rs.submit(sTk, "sell", 1e7) || ""), "short sales need buying power");
+  ok(/more than the 5/.test(rs.submit(sTk, "buy", 8) || ""), "one order cannot flip short to long");
+  rs.step(30);
+  ok(rs.submit(sTk, "buy", 5) === null && rs.pos[sTk].q === 0 && rs.fills[rs.fills.length - 1].realized !== 0, "cover closes the short and books P&L");
+  const htbTk = rs.world.stocks.find(x => rs.htb(x.tk)).tk;
+  ok(/hard to borrow/.test(rs.submit(htbTk, "sell", 1) || ""), "hard to borrow names cannot be shorted");
   const before = r.cash;
   r.step(MIN_DAY);
   ok(r.cash < before - r.burn + 1, "daily burn charged at the close");

@@ -15,6 +15,8 @@ Every price is a pure function of a seed and a minute, so the same seed always r
 
 ## The game
 
+- Separate Buy, Sell, Short and Cover. Shorts need buying power and a borrow, and no single order can flip you from long to short
+- Hotkeys for all of it: `b` buy, `s` sell, `shift+s` short, `shift+b` cover, `x` close, `shift+x` close half, `shift+1`-`4` size presets, `{` `}` halve or double, `j` `k` walk the scanner
 - Order ticket with bracket stops and targets, size-to-risk and buying-power presets
 - Drag a working order's line on the chart to move it, click its × to cancel, shift-click the chart to rest a limit
 - Level II marks your own resting orders; the blotter shows realized P&L on every closing fill
